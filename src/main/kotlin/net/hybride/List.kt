@@ -165,6 +165,11 @@ sealed class List<out A> {
 
             return loop(xs, Nil)
         }
+
+        fun <A, B> mapFL(xs: List<A>, f: (A) -> B): List<B> =
+            foldLeft(xs, Nil as List<A>, { b, a -> Cons(f(a), b) } )
+        //fun <A> filter(xs: List<A>, f: (A) -> Boolean): List<A> =
+
     }
 }
 object Nil: List<Nothing>()
