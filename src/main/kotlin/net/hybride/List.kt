@@ -139,15 +139,31 @@ sealed class List<out A> {
             foldLeft(ll, Nil as List<A>, { b, a -> append(a, b) })
 
         fun addOne(xs: List<Int>): List<Int> =
-            foldLeft(xs, Nil as List<Int>, { b, a -> Cons(a + 1, b) })
+            reverse(foldLeft(xs, Nil as List<Int>, { b, a -> Cons(a + 1, b) }))
 
-        fun addOne2(xs: List<Int>): List<Int> {
-            val l = when(xs) {
+        fun addOne2(xs: List<Int>): List<Int> =
+            when(xs) {
                 is Nil -> xs
                 is Cons -> Cons(xs.head + 1, addOne2(xs.tail))
             }
 
-            return List.reverse(l)
+        fun doubles2String(xs: List<Double>): List<String> =
+            reverse(foldLeft(xs, Nil as List<String>, { b, a -> Cons(a.toString(), b) }))
+
+        fun <A, B> map(xs: List<A>, f: (A) -> B): List<B> =
+            when(xs) {
+                is Nil -> xs
+                is Cons -> Cons(f(xs.head), map(xs.tail, f))
+            }
+
+        fun <A, B> map2(xs: List<A>, f: (A) -> B): List<B> {
+            tailrec fun loop(xs1: List<A>, acc: List<B>): List<B> =
+                when(xs1) {
+                    is Nil -> acc
+                    is Cons -> loop(xs1.tail, Cons(f(xs1.head), acc))
+                }
+
+            return loop(xs, Nil)
         }
     }
 }
@@ -190,8 +206,10 @@ fun main() {
 
     println(List.append2(ls, ls1))
     println(List.flatten(List.of(ls, ls1, ls)))
-    println(List.reverse(List.addOne(ls)))
-    val l1 = List.addOne2(ls)
-    println(l1)
-    println(List.reverse(l1))
+    println(List.addOne(ls))
+    println(List.addOne2(ls))
+    println(List.doubles2String(ds))
+
+    println(List.map(ls, { it + 2 }))
+    println(List.map2(ls, { it * 2 }))
 }
