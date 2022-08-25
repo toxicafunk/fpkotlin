@@ -25,5 +25,5 @@ tasks.withType<KotlinCompile> {
 }
 
 application {
-    mainClass.set("CafeKt")
+    mainClass.set("net.hybride.ListKt")
 }

@@ -1,7 +1,7 @@
 package net.hybride
 
-import net.hybride.MyModule.factorial
 import net.hybride.MyModule.abs
+import net.hybride.MyModule.factorial
 import kotlin.collections.List
 
 object MyModule {
@@ -45,7 +45,7 @@ object MyModule {
         tailrec fun loop(n: Int): Int =
             when {
                 n >= xs.size -> -1
-                p(xs[n])-> n
+                p(xs[n]) -> n
                 else -> loop(n + 1)
             }
 
@@ -57,15 +57,18 @@ object MyModule {
     }
 
     fun <A, B, C> curry(f: (A, B) -> C): (A) -> (B) -> C = {
-        a -> { b -> f(a, b) }
+            a ->
+        { b -> f(a, b) }
     }
 
     fun <A, B, C> uncurry(f: (A) -> (B) -> C): (A, B) -> C = {
-        a, b -> f(a)(b)
+            a, b ->
+        f(a)(b)
     }
 
     fun <A, B, C> compose(f: (B) -> C, g: (A) -> B): (A) -> C = {
-        a -> f(g(a))
+            a ->
+        f(g(a))
     }
 
     val <T> List<T>.tail: List<T>
@@ -84,21 +87,16 @@ object MyModule {
 
         return loop(1, true)
     }
-
 }
-
 
 fun main() {
     println(MyModule.formatAbs(-42))
     println(MyModule.formatFactorial(7))
     println(MyModule.fib(7))
-    println(MyModule.formatResult("absolute value",-42, ::abs))
-    println(MyModule.formatResult("factorial",7, ::factorial))
+    println(MyModule.formatResult("absolute value", -42, ::abs))
+    println(MyModule.formatResult("factorial", 7, ::factorial))
     println(MyModule.findFirst(arrayOf(3, 7, 9, 13)) { x -> x == 9 })
-    println(MyModule.isSorted(listOf(1,2,3,4,5), { i: Int,j: Int -> i <= j }))
-    println(MyModule.isSorted(listOf(1,2,5,4,3), { i: Int,j: Int -> i <= j }))
-    println(MyModule.isSorted(listOf(1,2,4,4,5), { i: Int,j: Int -> i <= j }))
-
+    println(MyModule.isSorted(listOf(1, 2, 3, 4, 5), { i: Int, j: Int -> i <= j }))
+    println(MyModule.isSorted(listOf(1, 2, 5, 4, 3), { i: Int, j: Int -> i <= j }))
+    println(MyModule.isSorted(listOf(1, 2, 4, 4, 5), { i: Int, j: Int -> i <= j }))
 }
-
-
