@@ -66,10 +66,8 @@ object MyModule {
         f(a)(b)
     }
 
-    fun <A, B, C> compose(f: (B) -> C, g: (A) -> B): (A) -> C = {
-            a ->
-        f(g(a))
-    }
+    fun <A, B, C> compose(f: (B) -> C, g: (A) -> B): (A) -> C =
+        { a -> f(g(a)) }
 
     val <T> List<T>.tail: List<T>
         get() = drop(1)
@@ -87,6 +85,17 @@ object MyModule {
 
         return loop(1, true)
     }
+
+    fun <A> isSorted1(aa: List<A>, order: (A, A) -> Boolean): Boolean {
+        tailrec fun loop(aa1: List<A>, acc: Boolean): Boolean =
+            when {
+                aa1.isEmpty() || aa1.size == 1 -> acc
+                order(aa1.head, aa1.tail.head) -> loop(aa1.tail, true)
+                else -> false
+            }
+
+        return loop(aa, true)
+    }
 }
 
 fun main() {
@@ -99,4 +108,8 @@ fun main() {
     println(MyModule.isSorted(listOf(1, 2, 3, 4, 5), { i: Int, j: Int -> i <= j }))
     println(MyModule.isSorted(listOf(1, 2, 5, 4, 3), { i: Int, j: Int -> i <= j }))
     println(MyModule.isSorted(listOf(1, 2, 4, 4, 5), { i: Int, j: Int -> i <= j }))
+
+    println(MyModule.isSorted1(listOf(1, 2, 3, 4, 5), { i: Int, j: Int -> i <= j }))
+    println(MyModule.isSorted1(listOf(1, 2, 5, 4, 3), { i: Int, j: Int -> i <= j }))
+    println(MyModule.isSorted1(listOf(1, 2, 4, 4, 5), { i: Int, j: Int -> i <= j }))
 }

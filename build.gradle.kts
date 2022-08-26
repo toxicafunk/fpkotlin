@@ -25,5 +25,5 @@ tasks.withType<KotlinCompile> {
 }
 
 application {
-    mainClass.set("net.hybride.ListKt")
+    mainClass.set("net.hybride.MyModuleKt")
 }
