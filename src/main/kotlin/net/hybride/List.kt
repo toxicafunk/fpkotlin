@@ -17,8 +17,11 @@ sealed class List<out A> {
             when (doubles) {
                 is Nil -> 1.0
                 is Cons ->
-                    if (doubles.head == 0.0) 0.0
-                    else doubles.head * product(doubles.tail)
+                    if (doubles.head == 0.0) {
+                        0.0
+                    } else {
+                        doubles.head * product(doubles.tail)
+                    }
             }
 
         fun <A> tail(xs: List<A>): List<A> =
@@ -41,10 +44,13 @@ sealed class List<out A> {
                 when (l) {
                     is Nil -> Nil
                     is Cons ->
-                        if (n1 == n) acc
-                        else when (acc) {
-                            is Nil -> Nil
-                            is Cons -> loop(n1 + 1, acc.tail)
+                        if (n1 == n) {
+                            acc
+                        } else {
+                            when (acc) {
+                                is Nil -> Nil
+                                is Cons -> loop(n1 + 1, acc.tail)
+                            }
                         }
                 }
 
@@ -55,16 +61,22 @@ sealed class List<out A> {
             when (l) {
                 is Nil -> Nil
                 is Cons ->
-                    if (f(l.head)) dropWhile(l.tail, f)
-                    else l
+                    if (f(l.head)) {
+                        dropWhile(l.tail, f)
+                    } else {
+                        l
+                    }
             }
 
         fun <A> dropWhile1(l: List<A>, f: (A) -> Boolean): List<A> =
             when (l) {
                 is Nil -> l
                 is Cons ->
-                    if (f(l.head)) dropWhile1(l.tail, f)
-                    else Cons(l.head, dropWhile1(l.tail, f))
+                    if (f(l.head)) {
+                        dropWhile1(l.tail, f)
+                    } else {
+                        Cons(l.head, dropWhile1(l.tail, f))
+                    }
             }
 
         fun <A> append(a1: List<A>, a2: List<A>): List<A> =
@@ -77,8 +89,11 @@ sealed class List<out A> {
             when (l) {
                 is Nil -> l
                 is Cons ->
-                    if (l.tail == Nil) Nil
-                    else Cons(l.head, init(l.tail))
+                    if (l.tail == Nil) {
+                        Nil
+                    } else {
+                        Cons(l.head, init(l.tail))
+                    }
             }
 
         fun <A, B> foldRight(xs: List<A>, z: B, f: (A, B) -> B): B =
@@ -174,11 +189,87 @@ sealed class List<out A> {
                 when (xs1) {
                     is Nil -> acc
                     is Cons ->
-                        if (f(xs1.head)) loop(xs1.tail, Cons(xs1.head, acc))
-                        else loop(xs1.tail, acc)
+                        if (f(xs1.head)) {
+                            loop(xs1.tail, Cons(xs1.head, acc))
+                        } else {
+                            loop(xs1.tail, acc)
+                        }
                 }
 
             return reverse(loop(xs, Nil as List<A>))
+        }
+
+        fun <A> filter1(xs: List<A>, f: (A) -> Boolean): List<A> =
+            when (xs) {
+                is Nil -> xs
+                is Cons ->
+                    if (f(xs.head)) {
+                        Cons(xs.head, filter1(xs.tail, f))
+                    } else {
+                        filter1(xs.tail, f)
+                    }
+            }
+
+        fun <A, B> flatMap(xa: List<A>, f: (A) -> List<B>): List<B> {
+            tailrec fun loop(xa1: List<A>, acc: List<B>): List<B> =
+                when (xa1) {
+                    is Nil -> acc
+                    is Cons -> loop(xa1.tail, append2(acc, f(xa1.head)))
+                }
+
+            return loop(xa, Nil as List<B>)
+        }
+
+        fun <A> filterFM(xs: List<A>, f: (A) -> Boolean): List<A> =
+            flatMap(xs, { a -> if (f(a)) List.of(a) else Nil })
+
+        fun zipAddInt(xs: List<Int>, ys: List<Int>): List<Int> {
+            tailrec fun loop(xs1: List<Int>, ys1: List<Int>, acc: List<Int>): List<Int> =
+                when {
+                    xs1 is Nil && ys1 is Nil -> acc
+                    xs1 is Cons && ys1 is Nil -> append2(acc, xs1)
+                    xs1 is Nil && ys1 is Cons -> append2(acc, ys1)
+                    xs1 is Cons && ys1 is Cons -> loop(xs1.tail, ys1.tail, Cons(xs1.head + ys1.head, acc))
+                    else -> acc
+                }
+
+            return reverse(loop(xs, ys, Nil as List<Int>))
+        }
+
+        fun <A> zipWith(xs: List<A>, ys: List<A>, f: (A, A) -> A): List<A> {
+            tailrec fun loop(xs1: List<A>, ys1: List<A>, acc: List<A>): List<A> =
+                when {
+                    xs1 is Nil && ys1 is Nil -> acc
+                    xs1 is Cons && ys1 is Nil -> append2(acc, xs1)
+                    xs1 is Nil && ys1 is Cons -> append2(acc, ys1)
+                    xs1 is Cons && ys1 is Cons -> loop(xs1.tail, ys1.tail, Cons(f(xs1.head, ys1.head), acc))
+                    else -> acc
+                }
+
+            return reverse(loop(xs, ys, Nil as List<A>))
+        }
+
+        tailrec fun <A> hasSubsequence1(xs: List<A>, sub: List<A>): Boolean = TODO()
+
+        tailrec fun <A> hasSubsequence(xs: List<A>, sub: List<A>): Boolean {
+            tailrec fun loop(xs1: List<A>, sub1: List<A>): Boolean =
+                when {
+                    xs1 is Nil && sub1 is Nil -> true
+                    xs1 is Cons && sub1 is Nil -> true
+                    xs1 is Nil && sub1 is Cons -> false
+                    xs1 is Cons && sub1 is Cons ->
+                        if (xs1.head == sub1.head) loop(xs1.tail, sub1.tail) else false
+                    else -> false
+                }
+
+            return if (loop(xs, sub)) {
+                return true
+            } else {
+                when {
+                    xs is Cons && sub is Cons -> hasSubsequence(xs.tail, sub)
+                    else -> false
+                }
+            }
         }
     }
 }
@@ -229,4 +320,15 @@ fun main() {
     println(List.map2(ls, { it * 2 }))
 
     println(List.filter(ls1, filterEven))
+    println(List.filter1(ls1, filterEven))
+    println(List.flatMap(ls, { i -> List.of(i, i) }))
+
+    println(List.filterFM(ls1, filterEven))
+    println(List.zipAddInt(ls, ls1))
+    println(List.zipWith(ls, ls1, { x, y -> x * y }))
+    println(List.hasSubsequence(ls, List.of(1, 2, 3)))
+    println(List.hasSubsequence(ls, List.of(3, 4)))
+    println(List.hasSubsequence(ls, List.of(3, 2)))
+    println(List.hasSubsequence(ls, List.of(5)))
+    println(List.hasSubsequence(ls, List.of(6)))
 }

@@ -7,21 +7,30 @@ import kotlin.collections.List
 object MyModule {
 
     fun abs(n: Int): Int =
-        if (n < 0) -n
-        else n
+        if (n < 0) {
+            -n
+        } else {
+            n
+        }
 
     fun factorial(i: Int): Int {
         tailrec fun go(n: Int, acc: Int): Int =
-            if (n <= 0) acc
-            else go(n - 1, n * acc)
+            if (n <= 0) {
+                acc
+            } else {
+                go(n - 1, n * acc)
+            }
 
         return go(i, 1)
     }
 
     fun fib(i: Int): Int {
         tailrec fun loop(n: Int, acc: Int): Int =
-            if (n == 1) acc + 1
-            else loop(n - 1, acc + n)
+            if (n == 1) {
+                acc + 1
+            } else {
+                loop(n - 1, acc + n)
+            }
 
         return loop(i, 0)
     }
