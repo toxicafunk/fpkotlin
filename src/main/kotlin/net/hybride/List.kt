@@ -249,8 +249,6 @@ sealed class List<out A> {
             return reverse(loop(xs, ys, Nil as List<A>))
         }
 
-        tailrec fun <A> hasSubsequence1(xs: List<A>, sub: List<A>): Boolean = TODO()
-
         tailrec fun <A> hasSubsequence(xs: List<A>, sub: List<A>): Boolean {
             tailrec fun loop(xs1: List<A>, sub1: List<A>): Boolean =
                 when {

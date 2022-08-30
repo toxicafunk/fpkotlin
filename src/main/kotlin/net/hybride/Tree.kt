@@ -3,7 +3,7 @@ package net.hybride
 sealed class Tree<out A> {
     companion object {
         fun <A> size(t: Tree<A>): Int {
-            tailrec fun loop(t1: Tree<A>, acc: Int): Int =
+            fun loop(t1: Tree<A>, acc: Int): Int =
                 when (t1) {
                     is Leaf -> acc + 1
                     is Branch -> 1 + loop(t1.left, acc) + loop(t1.right, acc)
@@ -13,7 +13,7 @@ sealed class Tree<out A> {
         }
 
         fun maximum(t: Tree<Int>): Int {
-            tailrec fun loop(t1: Tree<Int>, acc: Int): Int =
+            fun loop(t1: Tree<Int>, acc: Int): Int =
                 when (t1) {
                     is Leaf -> maxOf(acc, t1.value)
                     is Branch -> maxOf(loop(t1.left, acc), loop(t1.right, acc))
@@ -23,7 +23,7 @@ sealed class Tree<out A> {
         }
 
         fun <A> depth(t: Tree<A>): Int {
-            tailrec fun loop(t1: Tree<A>, acc: Int): Int =
+            fun loop(t1: Tree<A>, acc: Int): Int =
                 when (t1) {
                     is Leaf -> acc + 1
                     is Branch -> maxOf(loop(t1.left, acc + 1), loop(t1.right, acc + 1))
