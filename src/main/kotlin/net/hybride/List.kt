@@ -103,15 +103,15 @@ sealed class List<out A> {
             }
 
         fun sum2(ints: List<Int>): Int =
-            foldRight(ints, 0, { a, b -> a + b })
+            foldRight(ints, 0) { a, b -> a + b }
 
         fun product2(dbs: List<Double>): Double =
-            foldRight(dbs, 1.0, { a, b -> a * b })
+            foldRight(dbs, 1.0) { a, b -> a * b }
 
         fun <A> empty(): List<A> = Nil
 
         fun <A> length(xs: List<A>): Int =
-            foldRight(xs, 0, { _, b -> b + 1 })
+            foldRight(xs, 0) { _, b -> b + 1 }
 
         fun <A, B> foldLeft(xs: List<A>, z: B, f: (B, A) -> B): B {
             tailrec fun loop(xs1: List<A>, acc: B): B =
@@ -273,6 +273,19 @@ sealed class List<out A> {
 }
 object Nil : List<Nothing>()
 data class Cons<out A>(val head: A, val tail: List<A>) : List<A>()
+
+fun List<Int>.sum(): Int =
+    List.foldLeft(this, 0) { acc, a -> acc + a }
+
+fun List<Double>.sum(): Double =
+    List.foldLeft(this, 0.0) { acc, a -> acc + a }
+
+fun <A> List<A>.size(): Int = List.length(this)
+
+fun <A> List<A>.isEmpty(): Boolean = when (this) {
+    is Nil -> true
+    else -> false
+}
 
 fun main() {
     val ls = List.of(1, 2, 3, 4, 5)
