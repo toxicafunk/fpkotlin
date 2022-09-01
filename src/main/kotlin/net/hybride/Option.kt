@@ -10,7 +10,14 @@ sealed class Option<out A> {
                     is Nil -> acc
                     is Cons -> when (xs1.head) {
                         is None -> None
-                        is Some -> loop(xs1.tail, xs1.head.map { a -> Cons(a, acc.getOrElse { Nil }) })
+                        is Some ->
+                            loop(
+                                xs1.tail,
+                                xs1.head.map {
+                                        a ->
+                                    Cons(a, acc.getOrElse { Nil })
+                                }
+                            )
                     }
                 }
 
