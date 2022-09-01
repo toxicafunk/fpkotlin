@@ -10,25 +10,26 @@ sealed class Option<out A> {
                     is Nil -> acc
                     is Cons -> when (xs1.head) {
                         is None -> None
-                        is Some -> loop(xs1.tail, xs1.head.map { a -> Cons(a, acc.getOrElse { Nil as List<A> }) })
+                        is Some -> loop(xs1.tail, xs1.head.map { a -> Cons(a, acc.getOrElse { Nil }) })
                     }
                 }
 
             return loop(xs, None).map { l -> List.reverse(l) }
         }
 
-        /*fun <A> sequenceF(xs: List<Option<A>>): Option<List<A>> =
-            List.foldLeft(xs, None as Option<List<A>>) { acc, a ->
-                acc.map { l ->
-                    when (l) {
-                        is Nil
-                        when (a) {
-                            is None -> None
-                            is Some -> Cons(a.get, l)
-                        }
+        fun <A> sequenceF(xs: List<Option<A>>): Option<List<A>> {
+            val zero = Some(Nil as List<A>) as Option<List<A>>
+            val optList = List.foldLeft(xs, zero) { acc, a ->
+                acc.flatMap { l ->
+                    when (a) {
+                        is None -> None
+                        is Some -> Some(Cons(a.get, l))
                     }
                 }
-            }*/
+            }
+
+            return optList.map { l -> List.reverse(l) }
+        }
     }
 }
 data class Some<out A>(val get: A) : Option<A>()
@@ -93,4 +94,6 @@ fun main() {
     println(map2(Some(4), Some(6)) { a, b -> a * b })
     println(Option.sequence(List.of(Some(1), Some(2), Some(3))))
     println(Option.sequence(List.of(Some(1), None, Some(3))))
+    println(Option.sequenceF(List.of(Some(1), Some(2), Some(3))))
+    println(Option.sequenceF(List.of(Some(1), None, Some(3))))
 }
