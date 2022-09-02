@@ -2,7 +2,7 @@ package net.hybride
 
 sealed class Tree<out A> {
     companion object {
-        fun <A> size(t: Tree<A>): Int {
+        fun <A> sizeL(t: Tree<A>): Int {
             fun loop(t1: Tree<A>, acc: Int): Int =
                 when (t1) {
                     is Leaf -> acc + 1
@@ -12,7 +12,13 @@ sealed class Tree<out A> {
             return loop(t, 0)
         }
 
-        fun maximum(t: Tree<Int>): Int {
+        fun <A> size(t: Tree<A>): Int =
+            when (t) {
+                is Leaf -> 1
+                is Branch -> 1 + size(t.left) + size(t.right)
+            }
+
+        fun maximumL(t: Tree<Int>): Int {
             fun loop(t1: Tree<Int>, acc: Int): Int =
                 when (t1) {
                     is Leaf -> maxOf(acc, t1.value)
@@ -22,7 +28,13 @@ sealed class Tree<out A> {
             return loop(t, -99999)
         }
 
-        fun <A> depth(t: Tree<A>): Int {
+        fun maximum(t: Tree<Int>): Int =
+            when (t) {
+                is Leaf -> t.value
+                is Branch -> maxOf(maximum(t.left), maximum(t.right))
+            }
+
+        fun <A> depthL(t: Tree<A>): Int {
             fun loop(t1: Tree<A>, acc: Int): Int =
                 when (t1) {
                     is Leaf -> acc + 1
@@ -31,6 +43,12 @@ sealed class Tree<out A> {
 
             return loop(t, 0)
         }
+
+        fun <A> depth(t: Tree<A>): Int =
+            when (t) {
+                is Leaf -> 1
+                is Branch -> 1 + maxOf(depth(t.left), depth(t.right))
+            }
 
         fun <A, B> map(t: Tree<A>, f: (A) -> B): Tree<B> =
             when (t) {
@@ -61,6 +79,7 @@ sealed class Tree<out A> {
             )
     }
 }
+
 data class Leaf<A>(val value: A) : Tree<A>()
 data class Branch<A>(val left: Tree<A>, val right: Tree<A>) : Tree<A>()
 

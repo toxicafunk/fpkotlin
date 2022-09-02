@@ -25,5 +25,5 @@ tasks.withType<KotlinCompile> {
 }
 
 application {
-    mainClass.set("net.hybride.EitherKt")
+    mainClass.set("net.hybride.TreeKt")
 }

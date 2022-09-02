@@ -13,6 +13,12 @@ sealed class List<out A> {
                 is Cons -> ints.head + sum(ints.tail)
             }
 
+        fun <A> sumA(xs: List<A>, z: A, f: (A, A) -> A): A =
+            when (xs) {
+                is Nil -> z
+                is Cons -> f(xs.head, sumA(xs.tail, z, f))
+            }
+
         fun product(doubles: List<Double>): Double =
             when (doubles) {
                 is Nil -> 1.0
@@ -123,6 +129,8 @@ sealed class List<out A> {
             return loop(xs, z)
         }
 
+        // fun <A> reduce(xs: List<A>, z: A, append: (A, A) -> A): A
+
         fun sum3(ints: List<Int>): Int =
             foldLeft(ints, 0, { b, a -> b + a })
 
@@ -171,7 +179,7 @@ sealed class List<out A> {
                 is Cons -> Cons(f(xs.head), map(xs.tail, f))
             }
 
-        fun <A, B> map2(xs: List<A>, f: (A) -> B): List<B> {
+        fun <A, B> mapL(xs: List<A>, f: (A) -> B): List<B> {
             tailrec fun loop(xs1: List<A>, acc: List<B>): List<B> =
                 when (xs1) {
                     is Nil -> acc
@@ -181,7 +189,7 @@ sealed class List<out A> {
             return loop(xs, Nil)
         }
 
-        fun <A, B> mapFL(xs: List<A>, f: (A) -> B): List<B> =
+        fun <A, B> mapF(xs: List<A>, f: (A) -> B): List<B> =
             foldLeft(xs, Nil as List<B>, { b, a -> Cons(f(a), b) })
 
         fun <A> filter(xs: List<A>, f: (A) -> Boolean): List<A> {
@@ -199,14 +207,14 @@ sealed class List<out A> {
             return reverse(loop(xs, Nil as List<A>))
         }
 
-        fun <A> filter1(xs: List<A>, f: (A) -> Boolean): List<A> =
+        fun <A> filterL(xs: List<A>, f: (A) -> Boolean): List<A> =
             when (xs) {
                 is Nil -> xs
                 is Cons ->
                     if (f(xs.head)) {
-                        Cons(xs.head, filter1(xs.tail, f))
+                        Cons(xs.head, filterL(xs.tail, f))
                     } else {
-                        filter1(xs.tail, f)
+                        filterL(xs.tail, f)
                     }
             }
 
@@ -328,10 +336,10 @@ fun main() {
     println(List.doubles2String(ds))
 
     println(List.map(ls, { it + 2 }))
-    println(List.map2(ls, { it * 2 }))
+    println(List.mapL(ls, { it * 2 }))
 
     println(List.filter(ls1, filterEven))
-    println(List.filter1(ls1, filterEven))
+    println(List.filterL(ls1, filterEven))
     println(List.flatMap(ls, { i -> List.of(i, i) }))
 
     println(List.filterFM(ls1, filterEven))
