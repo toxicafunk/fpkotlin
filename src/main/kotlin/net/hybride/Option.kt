@@ -30,6 +30,28 @@ fun <A> Option<A>.orElse(ob: () -> Option<A>): Option<A> =
 fun <A> Option<A>.filter(f: (A) -> Boolean): Option<A> =
     this.flatMap { a -> if (f(a)) Some(a) else None }
 
+/*
+TC       |    Unit      |     Generic      |       Effect
+Option   |    None      |     Some         | Optionality / Nullability
+Either   |    Left*     |     Right*       | Alternatibity / Duality
+List     |    Nil       |     Cons         | Undeterminibility
+
+Class: Int, String, MyADT, List<Int>, Option<MyData>, Either<String, Double>, Functor<List<String>, List<Int>>
+Kinds: * -> *, List, Option, Either, Functor<List>
+Higher Kinded Types (HKTs): Functor, Monad
+*/
+/*
+class Monoid<A> (val nil: A, val combine: (A, A) -> A): A
+class Functor<F, A, B>(val original: F<A>, val map: A -> B ): F<B>
+
+class Functor<Option, A, B>(val original: Option<A>): Option<B> {
+    fun map(f: A -> B): Option<B> =
+        original.map(a -> f(a))
+}
+
+Functor<F<A>>.map(i -> trap { remote { someF(i) }})
+*/
+
 sealed class Option<out A> {
     companion object {
         fun <A, B> lift(f: (A) -> B): (Option<A>) -> Option<B> = { oa -> oa.map(f) }
