@@ -1,7 +1,7 @@
 package net.hybride.lazy
 
-import net.hybride.List
 import net.hybride.Cons as LCons
+import net.hybride.List
 import net.hybride.Nil
 import net.hybride.None
 import net.hybride.Option
@@ -18,11 +18,14 @@ sealed class Stream<out A> {
         fun <A> empty(): Stream<A> = Empty
 
         fun <A> of(vararg xs: A): Stream<A> =
-            if (xs.isEmpty()) empty()
-            else cons(
-                { xs[0] },
-                { of(*xs.sliceArray(1 until xs.size)) }
-            )
+            if (xs.isEmpty()) {
+                empty()
+            } else {
+                cons(
+                    { xs[0] },
+                    { of(*xs.sliceArray(1 until xs.size)) }
+                )
+            }
     }
 }
 
@@ -43,24 +46,38 @@ fun <A> Stream<A>.toList(): List<A> {
     fun loop(st: Stream<A>, acc: List<A>): List<A> =
         when (st) {
             is Empty -> List.reverse(acc)
-            is Cons -> LCons(st.head(), st.tail().toList())
+            is Cons -> loop(st.tail(), LCons(st.head(), acc))
         }
 
     return loop(this, Nil)
 }
 
-fun <A> Stream<A>.drop(n: Int): Stream<A> =
-    if (n == 0) this
-    else when (this) {
-        is Empty -> this
-        is Cons -> tail().drop(n - 1)
-    }
+fun <A> Stream<A>.drop(n: Int): Stream<A> {
+    tailrec fun loop(st: Stream<A>, counter: Int): Stream<A> =
+        when (st) {
+            is Empty -> Stream.empty()
+            is Cons ->
+                if (counter == 0) {
+                    st
+                } else {
+                    loop(st.tail(), n - 1)
+                }
+        }
+
+    return loop(this, n)
+}
 
 fun <A> Stream<A>.take(n: Int): Stream<A> {
-    fun loop(st: Stream<A>, acc: Stream<A>, counter: Int): Stream<A> =
-        if (counter == n) acc
-        else when (this) {
-            is Empty -> acc
-            is Cons -> loop(tail(), Stream.cons(head, () -> acc), counter + 1)
+    tailrec fun loop(st: Stream<A>, acc: Stream<A>, counter: Int): Stream<A> =
+        when (st) {
+            is Empty -> Stream.empty()
+            is Cons ->
+                if (n == 0) {
+                    acc
+                } else {
+                    loop(st.tail(), Stream.cons(st.head, { acc }), counter - 1)
+                }
         }
+
+    return loop(this, Stream.empty(), n)
 }
