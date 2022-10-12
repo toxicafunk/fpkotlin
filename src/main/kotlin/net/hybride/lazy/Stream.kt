@@ -169,8 +169,11 @@ fun fromU(n: Int): Stream<Int> = unfold(n) { Some(n to (n + 1)) }
 
 fun fibsU(): Stream<Int> = unfold(0 to 1) { (curr, next) -> Some( curr to (next to (curr + next)))}
 
-fun <A, B> Stream<A>.mapU(f: (A) -> B): Stream<B> =
-    TODO()
+fun <A, B> Stream<A>.mapU(f: (A) -> B): Stream<B> = unfold(this) { s: Stream<A> -> when(s) {
+    is Cons -> Some( f(s.head()) to s.tail())
+    else -> None
+} }
+
 fun <A> Stream<A>.takeU(n: Int): Stream<A> =
     TODO()
 fun <A> Stream<A>.takeWhileU(p: (A) -> Boolean): Stream<A> =
