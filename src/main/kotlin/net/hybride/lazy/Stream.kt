@@ -6,6 +6,11 @@ import net.hybride.Nil
 import net.hybride.None
 import net.hybride.Option
 import net.hybride.Some
+import net.hybride.getOrElse
+
+import net.hybride.lazy.Stream.Companion.cons
+import net.hybride.lazy.Stream.Companion.empty
+import net.hybride.map
 
 sealed class Stream<out A> {
     companion object {
@@ -52,32 +57,130 @@ fun <A> Stream<A>.toList(): List<A> {
     return loop(this, Nil)
 }
 
-fun <A> Stream<A>.drop(n: Int): Stream<A> {
-    tailrec fun loop(st: Stream<A>, counter: Int): Stream<A> =
+fun <A> Stream<A>.take(n: Int): Stream<A> {
+    fun loop(st: Stream<A>, n: Int): Stream<A> =
         when (st) {
-            is Empty -> Stream.empty()
+            is Empty -> empty()
             is Cons ->
-                if (counter == 0) {
-                    st
-                } else {
-                    loop(st.tail(), n - 1)
-                }
+                if (n == 0) empty()
+                else cons(st.head) { loop(st.tail(), n - 1) }
         }
 
     return loop(this, n)
 }
 
-fun <A> Stream<A>.take(n: Int): Stream<A> {
-    tailrec fun loop(st: Stream<A>, acc: Stream<A>, counter: Int): Stream<A> =
+fun <A> Stream<A>.drop(n: Int): Stream<A> {
+    tailrec fun loop(st: Stream<A>, counter: Int): Stream<A> =
         when (st) {
-            is Empty -> Stream.empty()
+            is Empty -> empty()
             is Cons ->
-                if (n == 0) {
-                    acc
-                } else {
-                    loop(st.tail(), Stream.cons(st.head, { acc }), counter - 1)
-                }
+                if (counter == 0) st
+                else loop(st.tail(), counter - 1)
         }
 
-    return loop(this, Stream.empty(), n)
+    return loop(this, n)
 }
+
+fun <A> Stream<A>.takeWhile(p: (A) -> Boolean): Stream<A>  {
+    fun loop(st: Stream<A>): Stream<A> =
+        when (st) {
+            is Empty -> empty()
+            is Cons ->
+                if (p(st.head())) cons(st.head) { loop(st.tail()) }
+                else empty()
+        }
+
+    return loop(this)
+}
+
+fun <A> Stream<A>.takeWhile2(p: (A) -> Boolean): Stream<A> =
+    when (this) {
+        is Empty -> empty()
+        is Cons ->
+            if (p(this.head())) cons(this.head) { this.tail().takeWhile2(p) }
+            else empty()
+    }
+
+fun <A> Stream<A>.exists(p: (A) -> Boolean): Boolean =
+    when (this) {
+        is Cons -> p(this.head()) || this.tail().exists(p)
+        else -> false
+    }
+
+fun <A, B> Stream<A>.foldRight(
+    z: () -> B,
+    f: (A, () -> B) -> B
+): B =
+    when (this) {
+        is Cons -> f(this.head()) { tail().foldRight(z, f) }
+        is Empty -> z()
+    }
+
+// not stack-safe
+fun <A> Stream<A>.exists2(p: (A) -> Boolean): Boolean =
+    foldRight({ false }, { a, b -> p(a) || b() })
+
+fun <A> Stream<A>.forAll(p: (A) -> Boolean): Boolean =
+    foldRight({ true }, { a, b -> p(a) && b() })
+
+fun <A> Stream<A>.takeWhileF(p: (A) -> Boolean): Stream<A> =
+    foldRight({ empty() }) { a, acc -> if (p(a)) cons({ a }, acc) else acc() }
+
+fun <A> Stream<A>.headOptionF(): Option<A> =
+    foldRight({ Option.empty() }) { a, _ -> Some(a) }
+
+fun <A, B> Stream<A>.map(f: (A) -> B): Stream<B> =
+    foldRight({ empty() }) { a, acc -> cons({ f(a) }, acc) }
+
+fun <A> Stream<A>.filter(p: (A) -> Boolean): Stream<A> =
+    foldRight({ empty() }) { a, acc -> if (p(a)) cons({ a }, acc) else acc() }
+
+fun <A> Stream<A>.append(st: Stream<A>): Stream<A> =
+    foldRight({ st }) { a, acc -> cons({ a }, acc) }
+
+fun <A, B> Stream<A>.flatMap(f: (A) -> Stream<B>): Stream<B> =
+    foldRight({ empty() }) { a, acc -> f(a).append(acc()) }
+
+fun <A> Stream<A>.find(p: (A) -> Boolean): Option<A> =
+    filter(p).headOption()
+
+fun ones(): Stream<Int> = cons({ 1 }) { ones() }
+
+fun <A> constant(a: A): Stream<A> = cons({ a }) { constant(a) }
+
+fun from(n: Int): Stream<Int> = cons({ n }) { from( n + 1) }
+
+fun fibs(): Stream<Int> {
+    fun loop(cur: Int, nxt: Int): Stream<Int> =
+        cons({ cur }) { loop(nxt, cur + nxt) }
+
+    return loop(0, 1)
+}
+
+fun <A, S> unfold(z: S, f: (S) -> Option<Pair<A, S>>): Stream<A> =
+    f(z).map { pair -> cons({ pair.first }){ unfold(pair.second, f) } }
+        .getOrElse { empty() }
+
+fun onesU(): Stream<Int> = unfold(1) { Some( 1 to 1) }
+
+fun <A> constantU(a: A): Stream<A> = unfold(a) { Some( a to a) }
+
+fun fromU(n: Int): Stream<Int> = unfold(n) { Some(n to (n + 1)) }
+
+fun fibsU(): Stream<Int> = unfold(0 to 1) { (curr, next) -> Some( curr to (next to (curr + next)))}
+
+fun <A, B> Stream<A>.mapU(f: (A) -> B): Stream<B> =
+    TODO()
+fun <A> Stream<A>.takeU(n: Int): Stream<A> =
+    TODO()
+fun <A> Stream<A>.takeWhileU(p: (A) -> Boolean): Stream<A> =
+    TODO()
+fun <A, B, C> Stream<A>.zipWith(
+    that: Stream<B>,
+    f: (A, B) -> C
+): Stream<C> =
+    TODO()
+fun <A, B> Stream<A>.zipAll(
+    that: Stream<B>
+): Stream<Pair<Option<A>, Option<B>>> =
+    TODO()

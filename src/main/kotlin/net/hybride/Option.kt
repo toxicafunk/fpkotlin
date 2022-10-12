@@ -54,6 +54,8 @@ Functor<F<A>>.map(i -> trap { remote { someF(i) }})
 
 sealed class Option<out A> {
     companion object {
+        fun <A> empty(): Option<A> = None
+
         fun <A, B> lift(f: (A) -> B): (Option<A>) -> Option<B> = { oa -> oa.map(f) }
 
         fun <A, B, C> map2(oa: Option<A>, ob: Option<B>, f: (A, B) -> C): Option<C> =
