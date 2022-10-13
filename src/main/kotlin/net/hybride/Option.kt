@@ -74,8 +74,9 @@ sealed class Option<out A> {
             }
 
         fun <A> sequenceM(xs: List<Option<A>>): Option<List<A>> =
-            List.foldRight(xs, Some(Nil as List<A>)) { oa: Option<A>,
-                                                       acc: Option<List<A>> ->
+            List.foldRight(xs, Some(Nil as List<A>)) {
+                    oa: Option<A>,
+                    acc: Option<List<A>> ->
                 map2(oa, acc) { a: A, l: List<A> -> Cons(a, l) }
             }
 

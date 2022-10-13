@@ -1,16 +1,15 @@
 package net.hybride.lazy
 
-import net.hybride.Cons as LCons
 import net.hybride.List
 import net.hybride.Nil
 import net.hybride.None
 import net.hybride.Option
 import net.hybride.Some
 import net.hybride.getOrElse
-
 import net.hybride.lazy.Stream.Companion.cons
 import net.hybride.lazy.Stream.Companion.empty
 import net.hybride.map
+import net.hybride.Cons as LCons
 
 sealed class Stream<out A> {
     companion object {
@@ -81,7 +80,7 @@ fun <A> Stream<A>.drop(n: Int): Stream<A> {
     return loop(this, n)
 }
 
-fun <A> Stream<A>.takeWhile(p: (A) -> Boolean): Stream<A>  {
+fun <A> Stream<A>.takeWhile(p: (A) -> Boolean): Stream<A> {
     fun loop(st: Stream<A>): Stream<A> =
         when (st) {
             is Empty -> empty()
@@ -148,7 +147,7 @@ fun ones(): Stream<Int> = cons({ 1 }) { ones() }
 
 fun <A> constant(a: A): Stream<A> = cons({ a }) { constant(a) }
 
-fun from(n: Int): Stream<Int> = cons({ n }) { from( n + 1) }
+fun from(n: Int): Stream<Int> = cons({ n }) { from(n + 1) }
 
 fun fibs(): Stream<Int> {
     fun loop(cur: Int, nxt: Int): Stream<Int> =
@@ -158,21 +157,23 @@ fun fibs(): Stream<Int> {
 }
 
 fun <A, S> unfold(z: S, f: (S) -> Option<Pair<A, S>>): Stream<A> =
-    f(z).map { pair -> cons({ pair.first }){ unfold(pair.second, f) } }
+    f(z).map { pair -> cons({ pair.first }) { unfold(pair.second, f) } }
         .getOrElse { empty() }
 
-fun onesU(): Stream<Int> = unfold(1) { Some( 1 to 1) }
+fun onesU(): Stream<Int> = unfold(1) { Some(1 to 1) }
 
-fun <A> constantU(a: A): Stream<A> = unfold(a) { Some( a to a) }
+fun <A> constantU(a: A): Stream<A> = unfold(a) { Some(a to a) }
 
 fun fromU(n: Int): Stream<Int> = unfold(n) { Some(n to (n + 1)) }
 
-fun fibsU(): Stream<Int> = unfold(0 to 1) { (curr, next) -> Some( curr to (next to (curr + next)))}
+fun fibsU(): Stream<Int> = unfold(0 to 1) { (curr, next) -> Some(curr to (next to (curr + next))) }
 
-fun <A, B> Stream<A>.mapU(f: (A) -> B): Stream<B> = unfold(this) { st: Stream<A> -> when (st) {
-    is Cons -> Some( f(st.head()) to st.tail())
-    else -> None
-} }
+fun <A, B> Stream<A>.mapU(f: (A) -> B): Stream<B> = unfold(this) { st: Stream<A> ->
+    when (st) {
+        is Cons -> Some(f(st.head()) to st.tail())
+        else -> None
+    }
+}
 
 fun <A> Stream<A>.takeU(n: Int): Stream<A> =
     unfold(this) { st: Stream<A> ->
