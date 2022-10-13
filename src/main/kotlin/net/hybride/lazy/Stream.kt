@@ -169,21 +169,86 @@ fun fromU(n: Int): Stream<Int> = unfold(n) { Some(n to (n + 1)) }
 
 fun fibsU(): Stream<Int> = unfold(0 to 1) { (curr, next) -> Some( curr to (next to (curr + next)))}
 
-fun <A, B> Stream<A>.mapU(f: (A) -> B): Stream<B> = unfold(this) { s: Stream<A> -> when(s) {
-    is Cons -> Some( f(s.head()) to s.tail())
+fun <A, B> Stream<A>.mapU(f: (A) -> B): Stream<B> = unfold(this) { st: Stream<A> -> when (st) {
+    is Cons -> Some( f(st.head()) to st.tail())
     else -> None
 } }
 
 fun <A> Stream<A>.takeU(n: Int): Stream<A> =
-    TODO()
+    unfold(this) { st: Stream<A> ->
+        when (st) {
+            is Cons ->
+                if (n > 0) Some(st.head() to st.tail().takeU(n - 1))
+                else None
+            else -> None
+        }
+    }
+
 fun <A> Stream<A>.takeWhileU(p: (A) -> Boolean): Stream<A> =
-    TODO()
+    unfold(this) { st: Stream<A> ->
+        when (st) {
+            is Cons ->
+                if (p(st.head())) Some(st.head() to st.tail())
+                else None
+            else -> None
+        }
+    }
+
 fun <A, B, C> Stream<A>.zipWith(
     that: Stream<B>,
     f: (A, B) -> C
-): Stream<C> =
-    TODO()
+): Stream<C> {
+    val stPair: Pair<Stream<A>, Stream<B>> = this to that
+    return unfold(stPair) { (ths: Stream<A>, tht: Stream<B>) ->
+        when (ths) {
+            is Cons ->
+                when (tht) {
+                    is Cons ->
+                        Some(
+                            Pair(
+                                f(ths.head(), tht.head()),
+                                ths.tail() to tht.tail()
+                            )
+                        )
+                    else -> None
+                }
+            else -> None
+        }
+    }
+}
+
 fun <A, B> Stream<A>.zipAll(
     that: Stream<B>
 ): Stream<Pair<Option<A>, Option<B>>> =
-    TODO()
+    unfold(this to that) { (ths: Stream<A>, tht: Stream<B>) ->
+        when (ths) {
+            is Cons ->
+                when (tht) {
+                    is Cons ->
+                        Some(
+                            Pair(
+                                Some(ths.head()) to Some(tht.head()),
+                                ths.tail() to tht.tail()
+                            )
+                        )
+                    else ->
+                        Some(
+                            Pair(
+                                Some(ths.head()) to None,
+                                ths.tail() to empty()
+                            )
+                        )
+                }
+            else ->
+                when (tht) {
+                    is Cons ->
+                        Some(
+                            Pair(
+                                None to Some(tht.head()),
+                                empty<A>() to tht.tail()
+                            )
+                        )
+                    else -> None
+                }
+        }
+    }
