@@ -1,5 +1,10 @@
 package net.hybride.rng
 
+import net.hybride.Cons
+import net.hybride.List
+import net.hybride.List.Companion.foldRight
+import net.hybride.Nil
+
 interface RNG {
     fun nextInt(): Pair<Int, RNG>
 }
@@ -42,9 +47,58 @@ fun double3(rng: RNG): Pair<Triple<Double, Double, Double>, RNG> {
     return Triple(d1, d2, d3) to rng3
 }
 
-fun ints(count: Int, rng: RNG): Pair<List<Int>, RNG> =
-    if (counts > 0) {
+fun ints(count: Int, rng: RNG): Pair<List<Int>, RNG> {
+    val pInts = if (count > 0) {
         val (i, r1) = rng.nextInt()
-        val (xs, r2) = ints(counts - 1)
-        Cons(im, xs) to r2
-    } else Nil to rng
+        val (xs, r2) = ints(count - 1, r1)
+        Cons(i, xs) to r2
+    } else {
+        Nil to rng
+    }
+
+    return pInts
+}
+
+typealias Rand<A> = (RNG) -> Pair<A, RNG>
+
+val intR: Rand<Int> = { rng -> rng.nextInt() }
+
+fun <A> unit(a: A): Rand<A> = { rng -> a to rng }
+
+fun <A, B> map(s: Rand<A>, f: (A) -> B): Rand<B> = { rng ->
+    val (a, rng1) = s(rng)
+    f(a) to rng1
+}
+
+fun doubleR(): Rand<Double> =
+    map(::nonNegativeInt) { i ->
+        i / Int.MAX_VALUE.toDouble() + 1
+    }
+
+fun <A, B, C> map2(ra: Rand<A>, rb: Rand<B>, f: (A, B) -> C): Rand<C> = { rng ->
+    val (a, ra1) = ra(rng)
+    val (b, rb1) = rb(ra1)
+    f(a, b) to rb1
+}
+
+fun <A, B> both(ra: Rand<A>, rb: Rand<B>): Rand<Pair<A, B>> =
+    map2(ra, rb) { a, b -> a to b }
+
+val intDoubleR: Rand<Pair<Int, Double>> = both(intR, doubleR())
+val doubleIntR: Rand<Pair<Double, Int>> = both(doubleR(), intR)
+
+fun <A> sequence(fs: List<Rand<A>>): Rand<List<A>> = { rng ->
+    when (fs) {
+        is Nil -> unit(List.empty<A>())(rng)
+        is Cons -> {
+            val (a, rng1) = fs.head(rng)
+            val (xs, rng2) = sequence(fs.tail)(rng1)
+            Cons(a, xs) to rng2
+        }
+    }
+}
+
+fun <A> sequence2(fs: List<Rand<A>>): Rand<List<A>> =
+    foldRight(fs, unit(List.empty())) { f, acc ->
+        map2(f, acc) { h, t -> Cons(h, t) }
+    }
