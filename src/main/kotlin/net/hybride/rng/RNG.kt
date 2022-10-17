@@ -87,6 +87,7 @@ fun <A, B> both(ra: Rand<A>, rb: Rand<B>): Rand<Pair<A, B>> =
 val intDoubleR: Rand<Pair<Int, Double>> = both(intR, doubleR())
 val doubleIntR: Rand<Pair<Double, Int>> = both(doubleR(), intR)
 
+// fun <A> sequence(fs: List<Rand<A>>): (RNG) -> Pair<List<A>, RNG> = { rng ->
 fun <A> sequence(fs: List<Rand<A>>): Rand<List<A>> = { rng ->
     when (fs) {
         is Nil -> unit(List.empty<A>())(rng)
@@ -98,7 +99,25 @@ fun <A> sequence(fs: List<Rand<A>>): Rand<List<A>> = { rng ->
     }
 }
 
-fun <A> sequence2(fs: List<Rand<A>>): Rand<List<A>> =
+fun <A> sequenceF(fs: List<Rand<A>>): Rand<List<A>> =
     foldRight(fs, unit(List.empty())) { f, acc ->
         map2(f, acc) { h, t -> Cons(h, t) }
+    }
+
+fun intsS(count: Int, rng: RNG): Pair<List<Int>, RNG> {
+    fun loop(c: Int): List<Rand<Int>> =
+        if (c == 0) Nil else Cons({ rng1 -> 1 to rng1 }, loop(c - 1))
+
+    return sequenceF(loop(count))(rng)
+}
+
+fun <A, B> flatMap(f: Rand<A>, g: (A) -> Rand<B>): Rand<B> = { rng ->
+    val (a, rng1) = f(rng)
+    g(a)(rng1)
+}
+
+fun nonNegativeIntLessThan(n: Int): Rand<Int> =
+    flatMap(::nonNegativeInt) { i ->
+        val mod = i % n
+        if (i + (n - 1) - mod >= 0) unit(mod) else nonNegativeIntLessThan(n)
     }
