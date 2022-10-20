@@ -1,6 +1,5 @@
 package net.hybride.par
 
-import arrow.core.split
 import net.hybride.getOrElse
 import net.hybride.None
 import net.hybride.Option
@@ -23,7 +22,17 @@ fun sum(ints: List<Int>): Int =
         sum(l) + sum(r)
     }
 
-class Par<A>(val get: A)
+class Par<A>(val get: A) {
+    companion object {
+        fun <A, B, C> map2(pl: Par<A>, pr: Par<B>, f: (l: A, r: B) -> C): Par<C> =
+            Par(f(pl.get, pr.get))
+        fun <A> fork(f: () -> Par<A>): Par<A> = f()
+        fun <A> unit(a: A): Par<A> = Par(a)
+        fun <A> lazyUnit(a: () -> A): Par<A> =
+            fork { unit(a()) }
+        fun <A> run(a: Par<A>): A = TODO()
+    }
+}
 
 fun <A> unit(a: () -> A): Par<A> = Par(a())
 
@@ -36,4 +45,21 @@ fun sumP(ints: List<Int>): Int =
         val sumL: Par<Int> = unit { sumP(l) }
         val sumR: Par<Int> = unit { sumP(r) }
         sumL.get + sumR.get
+    }
+
+fun sum2(ints: List<Int>): Par<Int> =
+    if (ints.size <= 1) unit { ints.firstOption().getOrElse { 0 } }
+    else {
+        val (l, r) = ints.splitAt(ints.size / 2)
+        Par.map2(sum2(l), sum2(r)) { lx: Int, rx: Int -> lx + rx }
+    }
+
+fun sumF(ints: List<Int>): Par<Int> =
+    if (ints.size <= 1) unit { ints.firstOption().getOrElse { 0 } }
+    else {
+        val (l, r) = ints.splitAt(ints.size / 2)
+        Par.map2(
+            Par.fork { sumF(l) },
+            Par.fork { sumF(r) }
+        ) { lx: Int, rx: Int -> lx + rx }
     }
