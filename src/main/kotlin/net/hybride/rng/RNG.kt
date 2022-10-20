@@ -134,3 +134,4 @@ fun <A, B, C> map2F(ra: Rand<A>, rb: Rand<B>, f: (A, B) -> C): Rand<C> =
 fun rollDie(): Rand<Int> = nonNegativeIntLessThan(6)
 
 fun rollDieFix(): Rand<Int> = map(nonNegativeIntLessThan(6)) { it + 1 }
+
