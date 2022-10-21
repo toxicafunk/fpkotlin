@@ -30,7 +30,7 @@ class Par<A>(val get: A) {
         fun <A> unit(a: A): Par<A> = Par(a)
         fun <A> lazyUnit(a: () -> A): Par<A> =
             fork { unit(a()) }
-        fun <A> run(a: Par<A>): A = TODO()
+        fun <A> run(a: Par<A>): A = a.get
     }
 }
 

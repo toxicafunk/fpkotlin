@@ -43,4 +43,5 @@ data class State<S, out A>(val run: (S) -> Pair<A, S>) {
         flatMap { a -> unit(f(a)) }
 }
 
+fun <A> id(a: A): A = a
 // typealias Rand<A> = State<RNG, A>
