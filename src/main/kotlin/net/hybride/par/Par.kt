@@ -1,9 +1,9 @@
 package net.hybride.par
 
-import net.hybride.getOrElse
 import net.hybride.None
 import net.hybride.Option
 import net.hybride.Some
+import net.hybride.getOrElse
 
 fun <A> List<A>.firstOption(): Option<A> =
     this.firstOrNull()?.let { Some(it) } ?: None
