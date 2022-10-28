@@ -1,5 +1,9 @@
 package net.hybride.concurrent
 
+import net.hybride.getOrElse
+import net.hybride.par.firstOption
+import net.hybride.par.splitAt
+import net.hybride.par.unit
 import java.util.concurrent.TimeUnit
 //import java.util.concurrent.ExecutorService
 
@@ -51,7 +55,11 @@ object Pars {
         a: () -> Par<A>
     ): Par<A> = {
             es: ExecutorService ->
-        es.submit(Callable<A> { a()(es).get() })
+        es.submit(object : Callable<A> {
+            override fun call(): A {
+                return a()(es).get()
+            }
+        })
     }
 
     data class TimedMap2Future<A, B, C>(
@@ -60,7 +68,7 @@ object Pars {
         val f: (A, B) -> C
     ) : Future<C> {
         override fun isDone(): Boolean = TODO("Unused")
-        override fun get(): C = TODO("Unused")
+        override fun get(): C = f(pa.get(), pb.get())
         override fun get(to: Long, tu: TimeUnit): C {
             val timeoutMillis = TimeUnit.MILLISECONDS.convert(to, tu)
             val start = System.currentTimeMillis()
@@ -101,14 +109,73 @@ object Pars {
     fun sortPar(parList: Par<List<Int>>): Par<List<Int>> =
         map(parList) { it.sorted() }
 
+    fun <A> sequence1(ps: List<Par<A>>): Par<List<A>> =
+        when {
+            ps.isEmpty() -> unit(emptyList())
+            else -> map2(
+                ps.first(),
+                sequence1(ps.drop(1))
+            ) { a: A, b: List<A> ->
+                listOf(a) + b
+            }
+        }
+
+    fun <A> sequence(ps: List<Par<A>>): Par<List<A>> =
+        when {
+            ps.isEmpty() -> unit(emptyList())
+            ps.size == 1 -> map(ps.first()) { listOf(it) }
+            else -> {
+                val (l,r) = ps.splitAt(ps.size/2)
+                map2(sequence(l), sequence(r)) { la, lb -> la + lb }
+            }
+        }
+
     fun <A, B> parMap(
         ps: List<A>,
         f: (A) -> B
-    ): Par<List<B>> = {
+    ): Par<List<B>> = fork {
         val fbs: List<Par<B>> = ps.map(asyncF(f))
-        TODO()
+        sequence(fbs)
+    }
+    fun <A> parFilter(
+        sa: List<A>,
+        f: (A) -> Boolean
+    ): Par<List<A>> {
+        val fas: List<Par<A>> = sa.map { lazyUnit { it } }
+        //return map(sequence(fas)) { fa -> fa.filter { f(it) }}
+         return map(sequence(fas)) { fa -> fa.flatMap { a ->
+             if (f(a)) listOf(a) else emptyList()
+         }}
     }
 
-    fun <A> sequence(ps: List<Par<A>>): Par<List<A>> =
-        TODO()
+    fun <A> append(sa: List<A>, z: A, f: (A, A) -> A): Par<A> {
+        val r = if ( sa.size <= 1) { unit(sa.firstOption().getOrElse { z }) }
+        else {
+            val (l, r) = sa.splitAt( sa.size / 2)
+            map2(
+                fork { append(l, z, f) },
+                fork { append(r, z, f) },
+                f
+            )
+        }
+
+        return r
+    }
+
+    private val maxInt: (Int, Int) -> Int = { a: Int, b: Int -> if (a >= b) a else b }
+
+    fun maximum(ints: List<Int>): Par<Int> =
+        append(ints, Int.MIN_VALUE, maxInt)
+}
+
+class SimpleExecutorService: ExecutorService {
+    override fun <A> submit(c: Callable<A>): Future<A> {
+        return Pars.UnitFuture(c.call())
+    }
+
+}
+fun main() {
+    val es: ExecutorService = SimpleExecutorService()
+    val m = Pars.maximum(listOf(2,4,7,2,9,4,3))(es)
+    println(m.get())
 }
