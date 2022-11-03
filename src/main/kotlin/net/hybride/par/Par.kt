@@ -10,9 +10,8 @@ fun <A> List<A>.firstOption(): Option<A> =
 
 fun <A> List<A>.splitAt(n: Int): Pair<List<A>, List<A>> =
     this.foldIndexed(mutableListOf<A>() to mutableListOf<A>()) { index, acc, a ->
-        if (index <= n) acc.first.add(a)
-        else acc.second.add(a)
-        return acc
+        if (index <= n) acc.first.add(a) else acc.second.add(a)
+        acc
     }
 
 fun sum(ints: List<Int>): Int =
