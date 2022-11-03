@@ -3,7 +3,6 @@ package net.hybride.concurrent
 import net.hybride.getOrElse
 import net.hybride.par.firstOption
 import net.hybride.par.splitAt
-import net.hybride.par.unit
 import java.util.concurrent.TimeUnit
 //import java.util.concurrent.ExecutorService
 
@@ -150,24 +149,9 @@ object Pars {
          }}
     }
 
-    fun <A> append(sa: List<A>, z: A, f: (A, A) -> A): Par<A> {
-        val r = if ( sa.size <= 1) { unit(sa.firstOption().getOrElse { z }) }
-        else {
-            val (l, r) = sa.splitAt( sa.size / 2)
-            map2(
-                fork { append(l, z, f) },
-                fork { append(r, z, f) },
-                f
-            )
-        }
-
-        return r
-    }
 
     private val maxInt: (Int, Int) -> Int = { a: Int, b: Int -> if (a >= b) a else b }
 
-    fun maximum(ints: List<Int>): Par<Int> =
-        append(ints, Int.MIN_VALUE, maxInt)
 }
 
 class SimpleExecutorService: ExecutorService {
@@ -178,6 +162,6 @@ class SimpleExecutorService: ExecutorService {
 }
 fun main() {
     val es: ExecutorService = SimpleExecutorService()
-    val m = Pars.maximum(listOf(2,4,7,2,9,4,3))(es)
-    println(m.get())
+    val l = listOf(2,4,7,2,9,4,3)
+
 }
