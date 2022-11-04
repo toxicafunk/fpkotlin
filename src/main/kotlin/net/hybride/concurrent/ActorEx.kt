@@ -2,12 +2,17 @@ package net.hybride.concurrent
 
 import java.util.concurrent.Executors as JUExecutors
 import java.util.concurrent.ExecutorService as JUExecutorService
+import java.util.concurrent.atomic.AtomicReference
 
 import net.hybride.nonblocking.Future
 import net.hybride.Either
 import net.hybride.Left
 import net.hybride.Option
+import net.hybride.None
 import net.hybride.Right
+import net.hybride.Some
+import net.hybride.getOrElse
+import net.hybride.map
 
 val es: JUExecutorService = JUExecutors.newFixedThreadPool(4)
 val s = Strategy.from(es)
@@ -15,8 +20,13 @@ val echoer = Actor<String>(s) {
     println("got message: $it")
 }
 
-fun <A, B, C> Par.map2(pa: Par<A>, pb: Par<B>, f: (A, B) -> C): Par<C> =
-    { es: ExecutorService ->
+typealias JPar<A> = (JUExecutorService) -> Future<A>
+
+fun <A, B> Option<A>.fold(b: () -> B, f: (A) -> B): B =
+     this.map(f).getOrElse(b)
+
+fun <A, B, C> JPar<A>.map2(pa: JPar<A>, pb: JPar<B>, f: (A, B) -> C): JPar<C> =
+    { es: JUExecutorService ->
         object : Future<C>() {
             override fun invoke(cb: (C) -> Unit) {
                 val ar = AtomicReference<Option<A>>(None)
@@ -26,14 +36,14 @@ fun <A, B, C> Par.map2(pa: Par<A>, pb: Par<B>, f: (A, B) -> C): Par<C> =
                         when (eab) {
                             is Left<A> ->
                                 br.get().fold(
-                                    { ar.set(Some(eab.a)) },
-                                    { b -> eval(es) { cb(f(eab.a, b)) } }
+                                    { ar.set(Some(eab.value)) },
+                                    { b -> eval(es) { cb(f(eab.value, b)) } }
                                 )
 
                             is Right<B> ->
                                 ar.get().fold(
-                                    { br.set(Some(eab.b)) },
-                                    { a -> eval(es) { cb(f(a, eab.b)) } }
+                                    { br.set(Some(eab.value)) },
+                                    { a -> eval(es) { cb(f(a, eab.value)) } }
                                 )
                         }
                     }
