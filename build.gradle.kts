@@ -26,5 +26,5 @@ tasks.withType<KotlinCompile> {
 }
 
 application {
-    mainClass.set("net.hybride.RNGKt")
+    mainClass.set("net.hybride.concurrent.ActorExKt")
 }

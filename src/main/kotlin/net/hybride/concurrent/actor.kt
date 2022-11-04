@@ -1,4 +1,4 @@
-package net.hybride.nonblocking
+package net.hybride.concurrent
 
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
