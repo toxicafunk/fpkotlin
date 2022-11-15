@@ -23,6 +23,11 @@ fun nonNegativeInt(rng: RNG): Pair<Int, RNG> {
     return if (rNum < 0) -(rNum + 1) to rng1 else rNum to rng1
 }
 
+fun nextBoolean(rng: RNG): Pair<Boolean, RNG> {
+    val (rInt, rng1) = nonNegativeInt(rng)
+    return (rInt % 2 == 0) to rng1
+}
+
 fun double(rng: RNG): Pair<Double, RNG> {
     val (rInt, rng1) = nonNegativeInt(rng)
     return rInt / Int.MAX_VALUE.toDouble() to rng1

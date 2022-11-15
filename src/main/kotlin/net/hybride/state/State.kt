@@ -2,7 +2,6 @@ package net.hybride.state
 
 import net.hybride.Cons
 import net.hybride.List
-import net.hybride.List.Companion.empty
 import net.hybride.List.Companion.foldRight
 
 fun <S, A, B> map(

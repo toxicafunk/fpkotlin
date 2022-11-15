@@ -277,6 +277,14 @@ sealed class List<out A> {
                 }
             }
         }
+
+        fun <A> fill(n: Int, f: () -> A): List<A> {
+            fun go(n: Int): List<A> =
+                if (n == 0) empty()
+                else Cons(f(), go(n - 1))
+
+            return go(n)
+        }
     }
 }
 object Nil : List<Nothing>()
@@ -350,4 +358,6 @@ fun main() {
     println(List.hasSubsequence(ls, List.of(3, 2)))
     println(List.hasSubsequence(ls, List.of(5)))
     println(List.hasSubsequence(ls, List.of(6)))
+
+    println(List.fill(3) { 6 })
 }
