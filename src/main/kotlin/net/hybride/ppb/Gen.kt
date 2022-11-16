@@ -69,6 +69,10 @@ data class Gen<A>(val sample: State<RNG, A>) {
                 .map { it.toInt() }
         )
 
+    fun chooseChar(): Gen<Char> = choose(32, 123).map { it.toChar() }
+
+    fun chooseString(n: Int): Gen<String> = listOfN(n, chooseChar()).map { it. }
+
     fun <A> unit(a: A): Gen<A> = Gen( State.unit(a) )
 
     fun boolean(): Gen<Boolean> =
@@ -84,4 +88,6 @@ fun main() {
     println(Gen.listOfN(5, gen).execute(rng).first)
     println(gen.choose(10, 15).execute(rng).first)
     println(gen.choosePair(20, 25).execute(rng).first)
+    println(gen.chooseChar().execute(rng).first)
+    println(gen.chooseString(6).execute(rng).first)
 }
