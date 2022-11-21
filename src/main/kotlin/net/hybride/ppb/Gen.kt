@@ -14,13 +14,14 @@ import net.hybride.rng.double
 import net.hybride.rng.intR
 import net.hybride.state.State
 import kotlin.math.absoluteValue
+import kotlin.math.min
 
 fun <A> listOf(a: Gen<A>): List<Gen<A>> = TODO()
 
 fun <A> listOfN(n: Int, a: Gen<A>): List<Gen<A>> = TODO()
 
-fun <A> forAll(ga: Gen<A>, pred: (A) -> Boolean): Prop =
-    Prop { n: TestCases, rng: RNG ->
+/*fun <A> forAll(ga: Gen<A>, pred: (A) -> Boolean): Prop =
+    Prop { m: MaxSize, n: TestCases, rng: RNG ->
         randomSequence(ga, rng)
             .mapIndexed { i, a ->
                 try {
@@ -33,7 +34,7 @@ fun <A> forAll(ga: Gen<A>, pred: (A) -> Boolean): Prop =
             .find { it.isFalsified() }
             .toOption()
             .getOrElse { Passed }
-    }
+    }*/
 
 fun <A> buildMessage(a: A, e: Exception): FailedCase =
     """
@@ -49,6 +50,10 @@ private fun <A> randomSequence(ga: Gen<A>, rng: RNG): Sequence<A> =
         yield(a)
         yieldAll(randomSequence(ga, rng1))
     }
+
+typealias MaxSize = Int
+
+fun <A> forAll(g: SGen<A>, f: (A) -> Boolean): Prop = TODO()
 
 typealias SuccessCount = Int
 typealias FailedCase = String
@@ -68,23 +73,45 @@ data class Falsified(val failure: FailedCase, val succeses: SuccessCount) : Resu
     override fun isFalsified(): Boolean = true
 }
 
-data class Prop(val run: (TestCases, RNG) -> Result) {
-    fun and(other: Prop): Prop = Prop { n, rng ->
-        when (val prop = run(n, rng)) {
-            is Passed -> other.run(n, rng)
+data class Prop(val check: (MaxSize, TestCases, RNG) -> Result) {
+    companion object {
+        fun <A> forAll(g: SGen<A>, f: (A) -> Boolean): Prop =
+            forAll(SGen { i -> g(i) }, f)
+
+        fun <A> forAll(g: (Int) -> Gen<A>, f: (A) -> Boolean): Prop =
+            Prop { max, n, rng ->
+                val casePerSize: Int = (n + (max - 1)) / max
+
+                val props: Sequence<Prop> = generateSequence(0) { it + 1 }
+                    .take(min(n, max) + 1)
+                    .map { i -> forAll(SGen { g(i) }, f) }
+
+                val prop: Prop = props.map { p ->
+                    Prop { max, _, rng ->
+                        p.check(max, casePerSize, rng)
+                    }
+                }.reduce { p1, p2 -> p1.and(p2) }
+
+                prop.check(max, n, rng)
+            }
+    }
+
+    fun and(other: Prop): Prop = Prop { m, n, rng ->
+        when (val prop = check(m, n, rng)) {
+            is Passed -> other.check(m, n, rng)
             is Falsified -> prop
         }
     }
 
-    fun or(other: Prop): Prop = Prop { n, rng ->
-        when (val prop = run(n, rng)) {
-            is Falsified -> other.tag(prop.failure).run(n, rng)
+    fun or(other: Prop): Prop = Prop { m, n, rng ->
+        when (val prop = check(m, n, rng)) {
+            is Falsified -> other.tag(prop.failure).check(m, n, rng)
             is Passed -> prop
         }
     }
 
-    private fun tag(msg: String) = Prop { n, rng ->
-        when (val prop = run(n, rng)) {
+    private fun tag(msg: String) = Prop { m, n, rng ->
+        when (val prop = check(m, n, rng)) {
             is Falsified -> Falsified(
                 "$msg: ${prop.failure}",
                 prop.succeses
@@ -151,15 +178,34 @@ data class Gen<A>(val sample: State<RNG, A>) {
 
     fun chooseString(n: Int): Gen<String> =
         listOfN(n, chooseChar())
-            .map { List.foldLeft(it, ""){ acc, a -> acc + a } }
+            .map { List.foldLeft(it, "") { acc, a -> acc + a } }
 
-    fun <A> unit(a: A): Gen<A> = Gen( State.unit(a) )
+    fun <A> unit(a: A): Gen<A> = Gen(State.unit(a))
 
     fun boolean(): Gen<Boolean> =
         Gen(State { rng -> nextBoolean(rng) })
 
     fun execute(rng: RNG): Pair<A, RNG> = this.sample.run(rng)
 
+    fun unsized(): SGen<A> = SGen { _ -> this }
+
+}
+
+data class SGen<A>(val forSize: (Int) -> Gen<A>) {
+    /*companion object {
+        fun <A> forAll(g: SGen<A>, f: (A) ->)
+    }*/
+
+    operator fun invoke(i: Int): Gen<A> =
+        this.forSize(i)
+
+    fun <B> map(f: (A) -> B): SGen<B> =
+        SGen { i -> forSize(i).map(f) }
+
+    fun <B> flatMap(f: (A) -> Gen<B>): SGen<B> =
+        SGen { i -> forSize(i).flatMap(f) }
+
+    fun listOf(): SGen<List<A>> = SGen { i -> Gen.listOfN(i, forSize(i)) }
 }
 
 fun main() {

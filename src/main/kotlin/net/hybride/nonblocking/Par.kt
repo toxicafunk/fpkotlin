@@ -10,7 +10,7 @@ abstract class Future<A> {
     internal abstract fun invoke(cb: (A) -> Unit)
 
     fun <A> unit(a: A): Par<A> =
-        { es: ExecutorService ->
+        { _: ExecutorService ->
             object : Future<A>() {
                 override fun invoke(cb: (A) -> Unit) {
                     cb(a)

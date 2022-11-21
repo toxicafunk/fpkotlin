@@ -1,7 +1,5 @@
 package net.hybride.concurrent
 
-import net.hybride.getOrElse
-import net.hybride.par.firstOption
 import net.hybride.par.splitAt
 import java.util.concurrent.TimeUnit
 //import java.util.concurrent.ExecutorService
@@ -28,7 +26,7 @@ fun <A> run(es: ExecutorService, a: Par<A>): Future<A> = a(es)
 
 object Pars {
     fun <A> unit(a: A): Par<A> = {
-            es: ExecutorService -> UnitFuture(a)
+            _: ExecutorService -> UnitFuture(a)
     }
 
     data class UnitFuture<A>(val a: A) : Future<A> {
@@ -70,16 +68,16 @@ object Pars {
     ) : Future<C> {
         override fun isDone(): Boolean = TODO("Unused")
         override fun get(): C = f(pa.get(), pb.get())
-        override fun get(to: Long, tu: TimeUnit): C {
-            val timeoutMillis = TimeUnit.MILLISECONDS.convert(to, tu)
+        override fun get(timeout: Long, timeUnit: TimeUnit): C {
+            val timeoutMillis = TimeUnit.MILLISECONDS.convert(timeout, timeUnit)
             val start = System.currentTimeMillis()
-            val a = pa.get(to, tu)
+            val a = pa.get(timeout, timeUnit)
             val duration = System.currentTimeMillis() - start
             val remainder = timeoutMillis - duration
             val b = pb.get(remainder, TimeUnit.MILLISECONDS)
             return f(a, b)
         }
-        override fun cancel(b: Boolean): Boolean = TODO("Unused")
+        override fun cancel(evenIfRunning: Boolean): Boolean = TODO("Unused")
         override fun isCancelled(): Boolean = TODO("Unused")
     }
 
