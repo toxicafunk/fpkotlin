@@ -134,6 +134,49 @@ data class Gen<A>(val sample: State<RNG, A>) {
 
         //fun <A> getOption(goa: Gen<Option<A>>): Gen<A> =
         //    goa.flatMap { oa -> oa. }
+
+        fun <A> union(ga: Gen<A>, gb: Gen<A>): Gen<A> =
+            boolean().flatMap { if (it) ga else gb }
+
+        fun <A> weighted(
+            pga: Pair<Gen<A>, Double>,
+            pgb: Pair<Gen<A>, Double>
+        ): Gen<A> {
+            val (ga, p1) = pga
+            val (gb, p2) = pgb
+            val threshold = p1.absoluteValue / (p1.absoluteValue + p2.absoluteValue)
+            return Gen(State { rng -> double(rng) })
+                .flatMap { d -> if (d < threshold) ga else gb }
+        }
+
+        fun choose(start: Int, stopExclusive: Int): Gen<Int> =
+            Gen(
+                State { rng: RNG -> nonNegativeInt(rng) }
+                    .map { start + (it % (stopExclusive - start)) }
+            )
+
+        fun choosePair(start: Int, stopExclusive: Int): Gen<Pair<Int, Int>> =
+            choose(start, stopExclusive).flatMap { i1 ->
+                choose(start, stopExclusive).map { i2 -> i1 to i2 }
+            }
+
+        fun chooseUnbiased(start: Int, stopExclusive: Int): Gen<Int> =
+            Gen(
+                State { rng: RNG -> double(rng) }
+                    .map { start + (it * (stopExclusive - start)) }
+                    .map { it.toInt() }
+            )
+
+        fun chooseChar(): Gen<Char> = choose(32, 123).map { it.toChar() }
+
+        fun chooseString(n: Int): Gen<String> =
+            listOfN(n, chooseChar())
+                .map { List.foldLeft(it, "") { acc, a -> acc + a } }
+
+        fun <A> unit(a: A): Gen<A> = Gen(State.unit(a))
+
+        fun boolean(): Gen<Boolean> =
+            Gen(State { rng -> nextBoolean(rng) })
     }
 
     fun <B> flatMap(f: (A) -> Gen<B>): Gen<B> =
@@ -142,49 +185,6 @@ data class Gen<A>(val sample: State<RNG, A>) {
     fun <B> map(f: (A) -> B): Gen<B> =
         flatMap { a -> unit(f(a)) }
 
-    fun <A> union(ga: Gen<A>, gb: Gen<A>): Gen<A> =
-        boolean().flatMap { if (it) ga else gb }
-
-    fun <A> weighted(
-        pga: Pair<Gen<A>, Double>,
-        pgb: Pair<Gen<A>, Double>
-    ): Gen<A> {
-        val (ga, p1) = pga
-        val (gb, p2) = pgb
-        val threshold = p1.absoluteValue / (p1.absoluteValue + p2.absoluteValue)
-        return Gen(State { rng -> double(rng) })
-            .flatMap { d -> if (d < threshold) ga else gb }
-    }
-
-    fun choose(start: Int, stopExclusive: Int): Gen<Int> =
-        Gen(
-            State { rng: RNG -> nonNegativeInt(rng) }
-                .map { start + (it % (stopExclusive - start)) }
-        )
-
-    fun choosePair(start: Int, stopExclusive: Int): Gen<Pair<Int, Int>> =
-        choose(start, stopExclusive).flatMap { i1 ->
-            choose(start, stopExclusive).map { i2 -> i1 to i2 }
-        }
-
-    fun chooseUnbiased(start: Int, stopExclusive: Int): Gen<Int> =
-        Gen(
-            State { rng: RNG -> double(rng) }
-                .map { start + (it * (stopExclusive - start)) }
-                .map { it.toInt() }
-        )
-
-    fun chooseChar(): Gen<Char> = choose(32, 123).map { it.toChar() }
-
-    fun chooseString(n: Int): Gen<String> =
-        listOfN(n, chooseChar())
-            .map { List.foldLeft(it, "") { acc, a -> acc + a } }
-
-    fun <A> unit(a: A): Gen<A> = Gen(State.unit(a))
-
-    fun boolean(): Gen<Boolean> =
-        Gen(State { rng -> nextBoolean(rng) })
-
     fun execute(rng: RNG): Pair<A, RNG> = this.sample.run(rng)
 
     fun unsized(): SGen<A> = SGen { _ -> this }
@@ -192,9 +192,11 @@ data class Gen<A>(val sample: State<RNG, A>) {
 }
 
 data class SGen<A>(val forSize: (Int) -> Gen<A>) {
-    /*companion object {
-        fun <A> forAll(g: SGen<A>, f: (A) ->)
-    }*/
+
+    companion object {
+        fun <A> listOf(ga: Gen<A>): SGen<List<A>> =
+            SGen { i -> Gen.listOfN(i, ga) }
+    }
 
     operator fun invoke(i: Int): Gen<A> =
         this.forSize(i)
@@ -205,15 +207,23 @@ data class SGen<A>(val forSize: (Int) -> Gen<A>) {
     fun <B> flatMap(f: (A) -> Gen<B>): SGen<B> =
         SGen { i -> forSize(i).flatMap(f) }
 
-    fun listOf(): SGen<List<A>> = SGen { i -> Gen.listOfN(i, forSize(i)) }
+    fun listOf(): SGen<List<A>> = SGen { i -> Gen.listOfN(i, this.forSize(i)) }
 }
 
 fun main() {
     val rng = SimpleRNG(404)
     val gen = Gen(State(intR))
     println(Gen.listOfN(5, gen).execute(rng).first)
-    println(gen.choose(10, 15).execute(rng).first)
-    println(gen.choosePair(20, 25).execute(rng).first)
-    println(gen.chooseChar().execute(rng).first)
-    println(gen.chooseString(8).execute(rng).first)
+    println(Gen.choose(10, 15).execute(rng).first)
+    println(Gen.choosePair(20, 25).execute(rng).first)
+    println(Gen.chooseChar().execute(rng).first)
+    println(Gen.chooseString(8).execute(rng).first)
+
+    val smallInt = Gen.choose(-10, 10)
+
+    val maxProp = forAll(SGen.listOf(smallInt)) { ns ->
+        val mx = ns.max()
+            ?: throw IllegalStateException("max on empty list")
+        !ns.exists { it > mx }
+    }
 }

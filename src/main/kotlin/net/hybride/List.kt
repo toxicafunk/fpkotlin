@@ -298,6 +298,9 @@ fun List<Double>.sum(): Double =
 
 fun <A> List<A>.size(): Int = List.length(this)
 
+fun List<Int>.max(): Option<Int> =
+    List.foldLeft(this, None as Option<Int>) { acc, c -> acc.map { i -> if (c > i) c else i } }
+
 fun <A> List<A>.isEmpty(): Boolean = when (this) {
     is Nil -> true
     else -> false
