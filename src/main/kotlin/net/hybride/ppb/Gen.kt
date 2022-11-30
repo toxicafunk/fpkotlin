@@ -221,9 +221,9 @@ fun main() {
 
     val smallInt = Gen.choose(-10, 10)
 
-    val maxProp = forAll(SGen.listOf(smallInt)) { ns ->
-        val mx = ns.max()
+    /*val maxProp = forAll(SGen.listOf(smallInt)) { ns ->
+        val mx = ns.m5max()
             ?: throw IllegalStateException("max on empty list")
         !ns.exists { it > mx }
-    }
+    }*/
 }
