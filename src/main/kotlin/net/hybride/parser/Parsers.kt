@@ -22,7 +22,14 @@ interface Parsers<PE> {
 
     fun <A> listOfN(i: Int, p: Parser<A>): Parser<List<A>>
 
-    fun countBeginWith(s: String): Parser<Int>
+    fun zeroPlusChars(c: Char, s: String): Parser<Int>
+
+    fun onePlusChars(c: Char, s: String): Either<PE, Parser<Int>> /*{
+        val p = run(zeroOrMoreChars(s), s)
+        p.fold({ e -> e}, {i -> if (i == 0) PE else i})
+    }*/
+
+    fun zeroPlusOnePlusChars(a: Char, b: Char, s: String): Either<PE, Parser<Pair<Int, Int>>>
 
     fun charLaws(c: Char): Boolean =
      run(char(c), c.toString()) == Right(c)
@@ -37,7 +44,8 @@ interface Parsers<PE> {
                 && run(listOfN(3, "ab" or "cad"), "ababcad") == Right("ababcad")
                 && run(listOfN(3, "ab" or "cad"), "cadabab") == Right("cadabab")
 
-    fun countBeginLaws(s: String): Boolean =
-        run(countBeginWith("aa"), "aa") == Right(2)
-                && run(countBeginWith("b123"), "b123") == Right(0)
+    fun countBeginLaws(): Boolean =
+        run(zeroPlusChars('a',"aa"), "aa") == Right(2)
+                && run(zeroPlusChars('a',"b123"), "b123") == Right(0)
+                && run(zeroPlusChars('a',""), "b123") == Right(0)
 }
