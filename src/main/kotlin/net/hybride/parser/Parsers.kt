@@ -22,6 +22,8 @@ interface Parsers<PE> {
 
     fun <A> listOfN(i: Int, p: Parser<A>): Parser<List<A>>
 
+    fun countBeginWith(s: String): Parser<Int>
+
     fun charLaws(c: Char): Boolean =
      run(char(c), c.toString()) == Right(c)
 
@@ -34,4 +36,8 @@ interface Parsers<PE> {
                 && run(listOfN(3, "ab" or "cad"), "cadcadcad") == Right("cadcadcad")
                 && run(listOfN(3, "ab" or "cad"), "ababcad") == Right("ababcad")
                 && run(listOfN(3, "ab" or "cad"), "cadabab") == Right("cadabab")
+
+    fun countBeginLaws(s: String): Boolean =
+        run(countBeginWith("aa"), "aa") == Right(2)
+                && run(countBeginWith("b123"), "b123") == Right(0)
 }
