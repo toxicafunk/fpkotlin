@@ -3,17 +3,19 @@ package net.hybride.parser
 import arrow.core.Either
 import arrow.core.Right
 
+import net.hybride.ppb.Gen
+import net.hybride.ppb.Prop
+import net.hybride.ppb.Prop.Companion.forAll
+
+interface Parser<A>
+
 interface Parsers<PE> {
 
-    interface Parser<A>
+    fun char(c: Char): Parser<Char>
 
-    fun char(c: Char): Parser<Char> = TODO()
-
-    fun string(s: String): Parser<String> = TODO()
+    fun string(s: String): Parser<String>
 
     fun <A> run(p: Parser<A>, input: String): Either<PE, A>
-
-    //fun orString(s1: String, s2: String): Parser<String>
 
     fun <A> or(pa: Parser<A>, a2: Parser<A>): Parser<A>
 
@@ -30,6 +32,10 @@ interface Parsers<PE> {
     }*/
 
     fun zeroPlusOnePlusChars(a: Char, b: Char, s: String): Either<PE, Parser<Pair<Int, Int>>>
+
+    fun <A> Parser<A>.many(): Parser<List<A>>
+
+    fun <A,B> Parser<A>.map(f: (A) -> B): Parser<B>
 
     fun charLaws(c: Char): Boolean =
      run(char(c), c.toString()) == Right(c)
@@ -48,4 +54,28 @@ interface Parsers<PE> {
         run(zeroPlusChars('a',"aa"), "aa") == Right(2)
                 && run(zeroPlusChars('a',"b123"), "b123") == Right(0)
                 && run(zeroPlusChars('a',""), "b123") == Right(0)
+
+
+}
+
+object ParseError
+
+abstract class Laws: Parser<ParseError> {
+    private fun <A> equal(
+        p1: Parser<A>,
+        p2: Parser<A>,
+        i: Gen<String>
+    ): Prop =
+        forAll(i) { s -> run(p1, s) == run(p2, s) }
+
+    fun <A> mapLaw(p: Parser<A>, i: Gen<String>): Prop =
+        equal(p, p.map { a -> a }, i)
+}
+
+abstract class Example : Parsers<ParseError> {
+    val numA: Parser<Int> = char('a').many().map { it.size }
+
+    fun numALaws(): Boolean = run(numA, "aaa") == Right(3)
+            && run(numA, "b") == Right(0)
+
 }
