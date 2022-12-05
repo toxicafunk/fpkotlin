@@ -35,22 +35,6 @@ fun <A> listOfN(n: Int, a: Gen<A>): List<Gen<A>> = TODO()
             .toOption()
             .getOrElse { Passed }
     }*/
-
-fun <A> buildMessage(a: A, e: Exception): FailedCase =
-    """
-        test case: $a
-        generated and exception: ${e.message}
-        stacktrace:
-        ${e.stackTrace.joinToString("\n")}
-    """.trimIndent()
-
-private fun <A> randomSequence(ga: Gen<A>, rng: RNG): Sequence<A> =
-    sequence {
-        val (a: A, rng1: RNG) = ga.sample.run(rng)
-        yield(a)
-        yieldAll(randomSequence(ga, rng1))
-    }
-
 typealias MaxSize = Int
 
 fun <A> forAll(g: SGen<A>, f: (A) -> Boolean): Prop = TODO()
@@ -94,24 +78,49 @@ data class Prop(val check: (MaxSize, TestCases, RNG) -> Result) {
 
                 prop.check(max, n, rng)
             }
+
+        fun <A> forAll(ga: Gen<A>, f: (A) -> Boolean): Prop =
+            Prop { _, n, rng ->
+                randomSequence(ga, rng).mapIndexed { i, a ->
+                    try {
+                        if (f(a)) Passed else Falsified(
+                            a.toString(),
+                            i
+                        )
+                    } catch (e: Exception) {
+                        Falsified(buildMessage(a, e), i)
+                    }
+                }.take(n)
+                    .find { it.isFalsified() }
+                    .toOption()
+                    .getOrElse { Passed }
+            }
+
+        fun <A> buildMessage(a: A, e: Exception): FailedCase =
+            """
+                test case: $a
+                generated and exception: ${e.message}
+                stacktrace:
+                ${e.stackTrace.joinToString("\n")}
+            """.trimIndent()
+
+        private fun <A> randomSequence(ga: Gen<A>, rng: RNG): Sequence<A> =
+            sequence {
+                val (a: A, rng1: RNG) = ga.sample.run(rng)
+                yield(a)
+                yieldAll(randomSequence(ga, rng1))
+            }
     }
 
-    fun <A> forAll(ga: Gen<A>, f: (A) -> Boolean): Prop =
-        Prop { _, n, rng ->
-            randomSequence(ga, rng).mapIndexed { i, a ->
-                try {
-                    if (f(a)) Passed else Falsified(
-                        a.toString(),
-                        i
-                    )
-                } catch (e: Exception) {
-                    Falsified(buildMessage(a, e), i)
-                }
-            }.take(n)
-                .find { it.isFalsified() }
-                .toOption()
-                .getOrElse { Passed }
+    private fun tag(msg: String) = Prop { m, n, rng ->
+        when (val prop = check(m, n, rng)) {
+            is Falsified -> Falsified(
+                "$msg: ${prop.failure}",
+                prop.succeses
+            )
+            is Passed -> prop
         }
+    }
 
     fun and(other: Prop): Prop = Prop { m, n, rng ->
         when (val prop = check(m, n, rng)) {
@@ -123,16 +132,6 @@ data class Prop(val check: (MaxSize, TestCases, RNG) -> Result) {
     fun or(other: Prop): Prop = Prop { m, n, rng ->
         when (val prop = check(m, n, rng)) {
             is Falsified -> other.tag(prop.failure).check(m, n, rng)
-            is Passed -> prop
-        }
-    }
-
-    private fun tag(msg: String) = Prop { m, n, rng ->
-        when (val prop = check(m, n, rng)) {
-            is Falsified -> Falsified(
-                "$msg: ${prop.failure}",
-                prop.succeses
-            )
             is Passed -> prop
         }
     }
