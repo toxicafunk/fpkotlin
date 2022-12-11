@@ -20,6 +20,7 @@ dependencies {
     /*compile("io.arrow-kt:arrow-fx:$arrowVersion")
     compile("io.arrow-kt:arrow-mtl:$arrowVersion")
     compile("io.arrow-kt:arrow-syntax:$arrowVersion")*/
+    implementation("io.kotlintest:kotlintest-runner-junit5:3.3.2")
     testImplementation(kotlin("test"))
 }
 
