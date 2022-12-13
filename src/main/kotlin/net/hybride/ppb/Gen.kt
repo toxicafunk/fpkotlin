@@ -6,12 +6,12 @@ import net.hybride.List
 import net.hybride.None
 import net.hybride.Option
 import net.hybride.Some
-import net.hybride.rng.nonNegativeInt
-import net.hybride.rng.nextBoolean
 import net.hybride.rng.RNG
 import net.hybride.rng.SimpleRNG
 import net.hybride.rng.double
 import net.hybride.rng.intR
+import net.hybride.rng.nextBoolean
+import net.hybride.rng.nonNegativeInt
 import net.hybride.state.State
 import kotlin.math.absoluteValue
 import kotlin.math.min
@@ -43,7 +43,7 @@ typealias SuccessCount = Int
 typealias FailedCase = String
 
 typealias TestCases = Int
-//typealias Result = Option<Pair<FailedCase, SuccessCount>>
+// typealias Result = Option<Pair<FailedCase, SuccessCount>>
 
 sealed class Result {
     abstract fun isFalsified(): Boolean
@@ -148,7 +148,7 @@ data class Gen<A>(val sample: State<RNG, A>) {
         fun <A> liftOption(ga: Gen<A>): Gen<Option<A>> =
             ga.map { a -> if (a == null) None else Some(a) }
 
-        //fun <A> getOption(goa: Gen<Option<A>>): Gen<A> =
+        // fun <A> getOption(goa: Gen<Option<A>>): Gen<A> =
         //    goa.flatMap { oa -> oa. }
 
         fun <A> union(ga: Gen<A>, gb: Gen<A>): Gen<A> =
@@ -204,7 +204,6 @@ data class Gen<A>(val sample: State<RNG, A>) {
     fun execute(rng: RNG): Pair<A, RNG> = this.sample.run(rng)
 
     fun unsized(): SGen<A> = SGen { _ -> this }
-
 }
 
 data class SGen<A>(val forSize: (Int) -> Gen<A>) {

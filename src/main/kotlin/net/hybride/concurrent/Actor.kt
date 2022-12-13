@@ -80,22 +80,22 @@ interface Strategy {
 }
 
 fun main() {
-    //tag::client1[]
+    // tag::client1[]
     val es: ExecutorService = Executors.newFixedThreadPool(4) // <1>
     val s = Strategy.from(es) // <2>
     val echoer = Actor<String>(s) { // <3>
         println("got message: $it")
     }
-    //end::client1[]
+    // end::client1[]
 
-    //tag::client2[]
+    // tag::client2[]
     echoer.send("hello") // <1>
-    //got message: hello // <2>
+    // got message: hello // <2>
 
     echoer.send("goodbye") // <3>
-    //got message: goodbye
+    // got message: goodbye
 
     echoer.send("You're just repeating everything I say, aren't you?")
-    //got message: You're just repeating everything I say, aren't you?
-    //end::client2[]
+    // got message: You're just repeating everything I say, aren't you?
+    // end::client2[]
 }

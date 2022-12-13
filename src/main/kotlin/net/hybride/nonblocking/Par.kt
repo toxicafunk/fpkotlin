@@ -61,4 +61,3 @@ abstract class Future<A> {
 }
 
 typealias Par<A> = (ExecutorService) -> Future<A>
-

@@ -4,10 +4,11 @@ import arrow.core.None
 import arrow.core.Option
 import arrow.core.compose
 import arrow.core.orElse
-import net.hybride.ppb.Gen
-import net.hybride.ppb.forAll
-import net.hybride.rng.SimpleRNG
-
+import chapter8.Gen
+import chapter8.Passed
+import chapter8.Prop.Companion.forAll
+import chapter8.SimpleRNG
+import io.kotlintest.shouldBe
 import io.kotlintest.specs.WordSpec
 
 interface Monoid<A> {
@@ -28,13 +29,13 @@ fun <A> listMonoid(): Monoid<List<A>> = object : Monoid<List<A>> {
     override val nil: List<A> = emptyList()
 }
 
-fun intAddition(): Monoid<Int> = object : Monoid<Int> {
+fun intAdditionMonoid(): Monoid<Int> = object : Monoid<Int> {
     override fun combine(a1: Int, a2: Int): Int = a1 + a2
 
     override val nil: Int = 0
 }
 
-fun intMultiplication(): Monoid<Int> = object : Monoid<Int> {
+fun intMultiplicationMonoid(): Monoid<Int> = object : Monoid<Int> {
     override fun combine(a1: Int, a2: Int): Int = a1 * a2
 
     override val nil: Int = 1
@@ -83,7 +84,7 @@ fun <A> endoMonoid(): Monoid<(A) -> A> = object : Monoid<(A) -> A> {
         { a -> a1(a2(a)) }
 
     override val nil: (A) -> A
-        get() = { a -> a}
+        get() = { a -> a }
 }
 
 fun <A> endoMonoidComposed(): Monoid<(A) -> A> = object : Monoid<(A) -> A> {
@@ -93,3 +94,33 @@ fun <A> endoMonoidComposed(): Monoid<(A) -> A> = object : Monoid<(A) -> A> {
     override val nil: (A) -> A
         get() = { it }
 }
+
+fun <A> monoidLaws(m: Monoid<A>, gen: Gen<A>) =
+    forAll(
+        gen.flatMap { a ->
+            gen.flatMap { b ->
+                gen.map { c ->
+                    Triple(a, b, c)
+                }
+            }
+        }
+    ) { (a, b, c) ->
+        m.combine(a, m.combine(b, c)) == m.combine(m.combine(a, b), c) &&
+            m.combine(m.nil, a) == m.combine(a, m.nil) &&
+            m.combine(m.nil, a) == a
+    }
+class AssociativitySpec : WordSpec({
+    val max = 100
+    val count = 100
+    val rng = SimpleRNG(42)
+    val intGen = Gen.choose(-10000, 10000)
+
+    "law of associativity" should {
+        "be upheld using existing monoids" {
+            monoidLaws(intAdditionMonoid(), intGen)
+                .check(max, count, rng) shouldBe Passed
+            monoidLaws(intMultiplicationMonoid(), intGen)
+                .check(max, count, rng) shouldBe Passed
+        }
+    }
+})

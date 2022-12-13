@@ -1,8 +1,8 @@
 package net.hybride
 
+import kotlin.collections.List
 import net.hybride.MyModule.abs
 import net.hybride.MyModule.factorial
-import kotlin.collections.List
 
 object MyModule {
 

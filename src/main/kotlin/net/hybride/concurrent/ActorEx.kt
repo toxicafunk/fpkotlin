@@ -1,18 +1,17 @@
 package net.hybride.concurrent
 
-import java.util.concurrent.Executors as JUExecutors
-import java.util.concurrent.ExecutorService as JUExecutorService
 import java.util.concurrent.atomic.AtomicReference
-
-import net.hybride.nonblocking.Future
+import java.util.concurrent.ExecutorService as JUExecutorService
+import java.util.concurrent.Executors as JUExecutors
 import net.hybride.Either
+import net.hybride.getOrElse
 import net.hybride.Left
-import net.hybride.Option
+import net.hybride.map
+import net.hybride.nonblocking.Future
 import net.hybride.None
+import net.hybride.Option
 import net.hybride.Right
 import net.hybride.Some
-import net.hybride.getOrElse
-import net.hybride.map
 
 val es: JUExecutorService = JUExecutors.newFixedThreadPool(4)
 val s = Strategy.from(es)
@@ -23,7 +22,7 @@ val echoer = Actor<String>(s) {
 typealias JPar<A> = (JUExecutorService) -> Future<A>
 
 fun <A, B> Option<A>.fold(b: () -> B, f: (A) -> B): B =
-     this.map(f).getOrElse(b)
+    this.map(f).getOrElse(b)
 
 fun <A, B, C> JPar<A>.map2(pa: JPar<A>, pb: JPar<B>, f: (A, B) -> C): JPar<C> =
     { es: JUExecutorService ->
@@ -58,4 +57,3 @@ fun main() {
     echoer.send("goodbye")
     echoer.send("You're just repeating everything I say, aren't you?")
 }
-

@@ -2,7 +2,6 @@ package net.hybride.concurrent
 
 import net.hybride.par.splitAt
 import java.util.concurrent.TimeUnit
-//import java.util.concurrent.ExecutorService
 
 interface Callable<A> {
     fun call(): A
@@ -26,7 +25,8 @@ fun <A> run(es: ExecutorService, a: Par<A>): Future<A> = a(es)
 
 object Pars {
     fun <A> unit(a: A): Par<A> = {
-            _: ExecutorService -> UnitFuture(a)
+            _: ExecutorService ->
+        UnitFuture(a)
     }
 
     data class UnitFuture<A>(val a: A) : Future<A> {
@@ -124,7 +124,7 @@ object Pars {
             ps.isEmpty() -> unit(emptyList())
             ps.size == 1 -> map(ps.first()) { listOf(it) }
             else -> {
-                val (l,r) = ps.splitAt(ps.size/2)
+                val (l, r) = ps.splitAt(ps.size / 2)
                 map2(sequence(l), sequence(r)) { la, lb -> la + lb }
             }
         }
@@ -141,25 +141,23 @@ object Pars {
         f: (A) -> Boolean
     ): Par<List<A>> {
         val fas: List<Par<A>> = sa.map { lazyUnit { it } }
-        //return map(sequence(fas)) { fa -> fa.filter { f(it) }}
-         return map(sequence(fas)) { fa -> fa.flatMap { a ->
-             if (f(a)) listOf(a) else emptyList()
-         }}
+        // return map(sequence(fas)) { fa -> fa.filter { f(it) }}
+        return map(sequence(fas)) { fa ->
+            fa.flatMap { a ->
+                if (f(a)) listOf(a) else emptyList()
+            }
+        }
     }
 
-
     private val maxInt: (Int, Int) -> Int = { a: Int, b: Int -> if (a >= b) a else b }
-
 }
 
-class SimpleExecutorService: ExecutorService {
+class SimpleExecutorService : ExecutorService {
     override fun <A> submit(c: Callable<A>): Future<A> {
         return Pars.UnitFuture(c.call())
     }
-
 }
 fun main() {
     val es: ExecutorService = SimpleExecutorService()
-    val l = listOf(2,4,7,2,9,4,3)
-
+    val l = listOf(2, 4, 7, 2, 9, 4, 3)
 }
