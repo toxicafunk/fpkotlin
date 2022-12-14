@@ -3,6 +3,7 @@ package net.hybride.typeclasses
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.compose
+import arrow.core.extensions.list.foldable.foldLeft
 import arrow.core.orElse
 import chapter8.Gen
 import chapter8.Passed
@@ -10,6 +11,7 @@ import chapter8.Prop.Companion.forAll
 import chapter8.SimpleRNG
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.WordSpec
+import net.hybride.par.splitAt
 
 interface Monoid<A> {
     fun combine(a1: A, a2: A): A
@@ -124,3 +126,37 @@ class AssociativitySpec : WordSpec({
         }
     }
 })
+
+fun <A> concatenate(la: List<A>, m: Monoid<A>): A =
+    la.foldLeft(m.nil, m::combine)
+
+fun <A, B> foldMap(la: List<A>, m: Monoid<B>, f: (A) -> B): B =
+    la.foldLeft(m.nil) { b, a -> m.combine(b, f(a)) }
+
+fun <A, B> foldMapN(la: List<A>, m: Monoid<B>, f: (A) -> B): B =
+    concatenate(la.map(f), m)
+
+fun <A, B> foldRight(la: Sequence<A>, z: B, f: (A, B) -> B): B =
+    foldMap(la.toList(), endoMonoid()) { a: A -> { b: B -> f(a,b) }}(z)
+
+fun <A, B> foldLeft(la: Sequence<A>, z: B, f: (B, A) -> B): B =
+    foldMap(la.toList(), dual(endoMonoid())) { a: A -> { b: B -> f(b, a) } }(z)
+
+fun <A, B> foldMapBF(la: List<A>, m: Monoid<B>, f: (A) -> B): B {
+    val (left,right) = la.splitAt(la.size/2)
+    return m.combine(
+        left.foldLeft(m.nil) { b, a -> m.combine(b, f(a)) },
+        right.foldLeft(m.nil) { b, a -> m.combine(b, f(a)) }
+    )
+}
+
+fun <A, B> foldMapBook(la: List<A>, m: Monoid<B>, f: (A) -> B): B =
+    when {
+        la.size >= 2 -> {
+            val (la1, la2) = la.splitAt(la.size / 2)
+            m.combine(foldMap(la1, m, f), foldMap(la2, m, f))
+        }
+        la.size == 1 ->
+            f(la.first())
+        else -> m.nil
+    }
