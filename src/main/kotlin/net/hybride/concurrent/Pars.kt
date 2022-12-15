@@ -93,7 +93,7 @@ object Pars {
     }
 
     fun <A> lazyUnit(a: () -> A): Par<A> =
-        Pars.fork { Pars.unit(a()) }
+        fork { unit(a()) }
 
     fun <A, B> asyncF(f: (A) -> B): (A) -> Par<B> = { a ->
         lazyUnit { f(a) }

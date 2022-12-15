@@ -11,7 +11,16 @@ import chapter8.Prop.Companion.forAll
 import chapter8.SimpleRNG
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.WordSpec
+import net.hybride.concurrent.ExecutorService
+import net.hybride.concurrent.Par
+import net.hybride.concurrent.Pars.map2
+import net.hybride.concurrent.Pars.unit
+import net.hybride.concurrent.SimpleExecutorService
+import net.hybride.concurrent.run
 import net.hybride.par.splitAt
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+
 
 interface Monoid<A> {
     fun combine(a1: A, a2: A): A
@@ -111,6 +120,7 @@ fun <A> monoidLaws(m: Monoid<A>, gen: Gen<A>) =
             m.combine(m.nil, a) == m.combine(a, m.nil) &&
             m.combine(m.nil, a) == a
     }
+
 class AssociativitySpec : WordSpec({
     val max = 100
     val count = 100
@@ -143,7 +153,7 @@ fun <A, B> foldLeft(la: Sequence<A>, z: B, f: (B, A) -> B): B =
     foldMap(la.toList(), dual(endoMonoid())) { a: A -> { b: B -> f(b, a) } }(z)
 
 fun <A, B> foldMapBF(la: List<A>, m: Monoid<B>, f: (A) -> B): B {
-    val (left,right) = la.splitAt(la.size/2)
+    val (left,right) = la.splitAt(la.size/2 - 1)
     return m.combine(
         left.foldLeft(m.nil) { b, a -> m.combine(b, f(a)) },
         right.foldLeft(m.nil) { b, a -> m.combine(b, f(a)) }
@@ -153,10 +163,41 @@ fun <A, B> foldMapBF(la: List<A>, m: Monoid<B>, f: (A) -> B): B {
 fun <A, B> foldMapBook(la: List<A>, m: Monoid<B>, f: (A) -> B): B =
     when {
         la.size >= 2 -> {
-            val (la1, la2) = la.splitAt(la.size / 2)
+            val (la1, la2) = la.splitAt(la.size/2 - 1)
             m.combine(foldMap(la1, m, f), foldMap(la2, m, f))
         }
         la.size == 1 ->
             f(la.first())
         else -> m.nil
     }
+
+fun <A> par(m: Monoid<A>): Monoid<Par<A>> = object : Monoid<Par<A>> {
+    override fun combine(a1: Par<A>, a2: Par<A>): Par<A> =
+        map2(a1, a2) { a11: A, a21: A -> m.combine(a11, a21) }
+
+    override val nil: Par<A>
+        get() = unit(m.nil)
+}
+
+fun <A, B> parFoldMap(
+    la: List<A>,
+    pm: Monoid<Par<B>>,
+    f: (A) -> B
+): Par<B> =
+    when {
+        la.size >= 2 -> {
+            val (la1, la2) = la.splitAt(la.size/2 - 1)
+            pm.combine(parFoldMap(la1, pm, f), parFoldMap(la2, pm, f))
+        }
+        la.size == 1 -> unit(f(la.first()))
+        else -> pm.nil
+    }
+
+fun main() {
+    val es: ExecutorService = SimpleExecutorService()
+    val fut = run(es, parFoldMap(
+        listOf("lorem", "ipsum", "dolor", "sit"),
+        par(stringMonoid)
+    ) { it.uppercase(Locale.getDefault()) })
+    println(fut.get(500L, TimeUnit.MILLISECONDS))
+}
