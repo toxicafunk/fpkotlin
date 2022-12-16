@@ -1,10 +1,10 @@
 package net.hybride.typeclasses
 
-import arrow.core.None
-import arrow.core.Option
-import arrow.core.compose
+import arrow.Kind
+import arrow.core.*
 import arrow.core.extensions.list.foldable.foldLeft
-import arrow.core.orElse
+import arrow.core.extensions.list.foldable.foldMap
+import arrow.core.extensions.set.foldable.foldLeft
 import chapter8.Gen
 import chapter8.Passed
 import chapter8.Prop.Companion.forAll
@@ -18,6 +18,7 @@ import net.hybride.concurrent.Pars.unit
 import net.hybride.concurrent.SimpleExecutorService
 import net.hybride.concurrent.run
 import net.hybride.par.splitAt
+import java.lang.Integer.min
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -193,6 +194,98 @@ fun <A, B> parFoldMap(
         else -> pm.nil
     }
 
+sealed class WC
+
+data class Stub(val chars: String) : WC()
+data class Part(val ls: String, val words: Int, val rs: String) : WC()
+
+fun wcMonoid(): Monoid<WC> = object : Monoid<WC> {
+    override fun combine(a1: WC, a2: WC): WC =
+        when (a1) {
+            is Stub -> when(a2) {
+                is Stub -> Stub(a1.chars + a2.chars)
+                is Part -> Part(a1.chars + a2.ls, a2.words, a2.rs)
+            }
+            is Part -> when(a2) {
+                is Stub -> Part(a1.ls, a1.words, a2.chars + a2.chars)
+                is Part -> Part(a1.ls,
+                    a1.words + a2.words +(if ((a1.rs + a2.ls).isEmpty()) 0 else 1),
+                    a2.rs
+                )
+            }
+        }
+
+    override val nil: WC
+        get() = Stub("")
+}
+
+fun wordCount(s: String): Int {
+    fun wc(c: Char): WC =
+        if (c.isWhitespace()) Part("", 0, "")
+        else Stub("$c")
+
+    fun unstub(s: String): Int = min(s.length, 1)
+
+    val WCM = wcMonoid()
+
+    return when (val wc = foldMap(s.asSequence().toList(), WCM) { wc(it) }) {
+        is Stub -> unstub(wc.chars)
+        is Part -> unstub(wc.rs) + wc.words + unstub(wc.rs)
+    }
+}
+interface Foldable<F> {
+    // Kind<F, A> = F<A>
+    fun <A, B> foldRight(fa: Kind<F, A>, z: B, f: (A, B) -> B): B =
+        foldLeft(fa, z) { b, a -> f(a,b)}
+    fun <A, B> foldLeft(fa: Kind<F, A>, z: B, f: (B, A) -> B): B =
+        foldRight(fa, z) { a, b -> f(b,a) }
+    fun <A, B> foldMap(fa: Kind<F, A>, m: Monoid<B>, f: (A) -> B): B =
+        foldLeft(fa, m.nil) { b, a -> m.combine(f(a), b) }
+    fun <A> concatenate(fa: Kind<F, A>, m: Monoid<A>): A =
+        foldLeft(fa, m.nil, m::combine)
+}
+
+object ListFoldable : Foldable<ForListK> {
+    override fun <A, B> foldLeft(fa: ListKOf<A>, z: B, f: (B, A) -> B): B =
+        fa.fix().foldLeft(z, f)
+
+    override fun <A, B> foldRight(fa: ListKOf<A>, z: B, f: (A, B) -> B): B =
+        fa.fix().foldRight(z, f)
+}
+
+fun <A, B> productMonoid(
+    ma: Monoid<A>,
+    mb: Monoid<B>
+): Monoid<Pair<A, B>> = object : Monoid<Pair<A, B>> {
+    override fun combine(a1: Pair<A, B>, a2: Pair<A, B>): Pair<A, B> =
+        ma.combine(a1.first, a2.first) to mb.combine(a1.second, a2.second)
+
+    override val nil: Pair<A, B>
+        get() = ma.nil to mb.nil
+}
+
+fun <K, V> mapMergeMonoid(v: Monoid<V>): Monoid<Map<K, V>> =
+    object : Monoid<Map<K, V>> {
+        override fun combine(a1: Map<K, V>, a2: Map<K, V>): Map<K, V> =
+            (a1.keys + a2.keys).foldLeft(nil) { acc, k ->
+                acc + mapOf(
+                    k to v.combine(
+                        a1.getOrDefault(k, v.nil),
+                        a2.getOrDefault(k, v.nil)
+                    )
+                )
+            }
+
+        override val nil: Map<K, V> = emptyMap()
+    }
+
+val m: Monoid<Map<String, Map<String, Int>>> =
+    mapMergeMonoid<String, Map<String, Int>>(
+        mapMergeMonoid<String, Int>(
+            intAdditionMonoid()
+        )
+    )
+
 fun main() {
     val es: ExecutorService = SimpleExecutorService()
     val fut = run(es, parFoldMap(
@@ -200,4 +293,7 @@ fun main() {
         par(stringMonoid)
     ) { it.uppercase(Locale.getDefault()) })
     println(fut.get(500L, TimeUnit.MILLISECONDS))
+    val m1 = mapOf("o1" to mapOf("i1" to 1, "i2" to 2))
+    val m2 = mapOf("o1" to mapOf("i3" to 3))
+    println(m.combine(m1, m2))
 }
