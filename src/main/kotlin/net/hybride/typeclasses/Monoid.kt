@@ -233,6 +233,19 @@ fun wordCount(s: String): Int {
         is Part -> unstub(wc.rs) + wc.words + unstub(wc.rs)
     }
 }
+
+// HKT
+/*
+        Type     |  Kind
+        String   |   *
+        List<A>  |  * -> *          | String -> List<String>
+        F<A>     |  * -> * -> *     | List -> String -> List<String>, Integer -> Monoid -> Monoid<Integer>
+        G<F<A>>  | * -> * -> * -> * | Monad -> List -> String -> Monad<List<String>>
+
+        OO -> A is a X
+        FP -> A has a X, A forms X under [conditions]
+ */
+
 interface Foldable<F> {
     // Kind<F, A> = F<A>
     fun <A, B> foldRight(fa: Kind<F, A>, z: B, f: (A, B) -> B): B =
