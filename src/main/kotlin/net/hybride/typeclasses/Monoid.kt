@@ -22,7 +22,6 @@ import java.lang.Integer.min
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-
 interface Monoid<A> {
     fun combine(a1: A, a2: A): A
     val nil: A
