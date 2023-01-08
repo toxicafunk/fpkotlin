@@ -161,8 +161,8 @@ data class Gen<A>(val sample: State<RNG, A>) {
             val (ga, p1) = pga
             val (gb, p2) = pgb
             val threshold = p1.absoluteValue / (p1.absoluteValue + p2.absoluteValue)
-            return Gen(State { rng -> double(rng) })
-                .flatMap { d -> if (d < threshold) ga else gb }
+            return Gen(State { rng: RNG -> double(rng) })
+                .flatMap { d: Double -> if (d < threshold) ga else gb }
         }
 
         fun choose(start: Int, stopExclusive: Int): Gen<Int> =

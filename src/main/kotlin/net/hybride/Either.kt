@@ -58,7 +58,7 @@ fun <E, A, B> traverseF(
     xs: List<A>,
     f: (A) -> Either<E, B>
 ): Either<E, List<B>> =
-    List.foldRight(xs, Right(Nil as List<B>)) {
+    xs.foldRight(Right(Nil as List<B>)) {
             a: A,
             elb: Either<E, List<B>> ->
         map2(f(a), elb) { b: B, l: List<B> -> Cons(b, l) }

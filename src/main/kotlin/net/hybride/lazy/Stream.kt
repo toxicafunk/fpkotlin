@@ -236,7 +236,7 @@ fun <A, B> Stream<A>.zipAll(
                         Some(
                             Pair(
                                 Some(ths.head()) to None,
-                                ths.tail() to empty()
+                                ths.tail() to empty<B>()
                             )
                         )
                 }

@@ -18,9 +18,13 @@ import net.hybride.concurrent.Pars.unit
 import net.hybride.concurrent.SimpleExecutorService
 import net.hybride.concurrent.run
 import net.hybride.par.splitAt
+import net.hybride.Option
+import net.hybride.None
+import net.hybride.orElse
 import java.lang.Integer.min
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.collections.List
 
 interface Monoid<A> {
     fun combine(a1: A, a2: A): A
@@ -37,7 +41,7 @@ fun <A> listMonoid(): Monoid<List<A>> = object : Monoid<List<A>> {
     override fun combine(a1: List<A>, a2: List<A>): List<A> =
         a1 + a2
 
-    override val nil: List<A> = emptyList()
+    override val nil: List<A> = emptyList<A>()
 }
 
 fun intAdditionMonoid(): Monoid<Int> = object : Monoid<Int> {
@@ -303,7 +307,7 @@ fun main() {
     val fut = run(es, parFoldMap(
         listOf("lorem", "ipsum", "dolor", "sit"),
         par(stringMonoid)
-    ) { it.uppercase(Locale.getDefault()) })
+    ) { it.toUpperCase(Locale.getDefault()) })
     println(fut.get(500L, TimeUnit.MILLISECONDS))
     val m1 = mapOf("o1" to mapOf("i1" to 1, "i2" to 2))
     val m2 = mapOf("o1" to mapOf("i3" to 3))

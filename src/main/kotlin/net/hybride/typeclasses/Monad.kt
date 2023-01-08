@@ -1,7 +1,14 @@
 package net.hybride.typeclasses
 
 import arrow.Kind
-import arrow.core.*
+import arrow.core.ForListK
+import arrow.core.ForSequenceK
+import arrow.core.ListKOf
+import arrow.core.fix
+import arrow.core.ListK
+import arrow.core.SequenceK
+import arrow.core.SequenceKOf
+import net.hybride.typeclasses.Option
 
 interface Monad<F>: Functor<F> {
     fun <A> unit(a: A): Kind<F, A>
@@ -20,6 +27,19 @@ interface Monad<F>: Functor<F> {
         f: (A, B) -> C
     ): Kind<F, C> =
         flatMap(fa) { a -> map(fb) { b -> f(a, b) } }
+
+    fun <A> sequence(lfa: List<Kind<F, A>>): Kind<F, List<A>> =
+        lfa.foldRight(
+            unit(List.empty<A>())
+        ) { fa: Kind<F, A>, fla: Kind<F, List<A>> ->
+            map2(fa, fla) { a, la -> Cons<A>(a, la) as List<A> }
+        }
+
+    fun <A, B> traverse(
+        la: List<A>,
+        f: (A) -> Kind<F, B>
+    ): Kind<F, List<B>> =
+        TODO()
 }
 
 object Monads {
@@ -38,7 +58,7 @@ object Monads {
     }
 
     val optionMonad = object : Monad<ForOption> {
-        override fun <A> unit(a: A): OptionOf<A> = Option.unit(a)
+        override fun <A> unit(a: A): OptionOf<A> = Some(a)
 
         override fun <A, B> flatMap(fa: OptionOf<A>, f: (A) -> OptionOf<B>): OptionOf<B> =
             fa.fix().flatMap { a -> f(a).fix() }

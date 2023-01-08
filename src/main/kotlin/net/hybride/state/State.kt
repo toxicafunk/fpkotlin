@@ -2,7 +2,7 @@ package net.hybride.state
 
 import net.hybride.Cons
 import net.hybride.List
-import net.hybride.List.Companion.foldRight
+import net.hybride.state.State.Companion.unit
 
 fun <S, A, B> map(
     sa: (S) -> Pair<A, S>,
@@ -27,7 +27,7 @@ data class State<S, out A>(val run: (S) -> Pair<A, S>) {
             }
 
         fun <S, A> sequence(fs: List<State<S, A>>): State<S, List<A>> =
-            foldRight(fs, unit(List.empty<A>())) { f, acc ->
+            fs.foldRight(unit(List.empty<A>())) { f, acc ->
                 map2(f, acc) { h, t -> Cons(h, t) }
             }
     }
@@ -39,7 +39,7 @@ data class State<S, out A>(val run: (S) -> Pair<A, S>) {
         }
 
     fun <B> map(f: (A) -> B): State<S, B> =
-        flatMap { a -> unit(f(a)) }
+        flatMap { a: A -> unit<S, B>(f(a)) }
 }
 
 fun <A> id(a: A): A = a

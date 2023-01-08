@@ -4,15 +4,16 @@ import arrow.Kind
 import arrow.Kind2
 import arrow.higherkind
 import chapter8.RNG
+import net.hybride.Nil
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 
-class ForGen private constructor() { companion object }
+/*class ForGen private constructor() { companion object }
 typealias GenOf<A> = Kind<ForGen, A>
 //typealias GenKindedJ<A> = io.kindedj.Hk<ForGen, A>
 @Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
 inline fun <A> GenOf<A>.fix(): Gen<A> =
-    this as Gen<A>
+    this as Gen<A>*/
 
 
 @higherkind
@@ -28,12 +29,12 @@ data class Gen<A>(val sample: State<RNG, A>) : GenOf<A> {
     fun <B> map(f: (A) -> B): Gen<B> = TODO()
 }
 
-class ForPar private constructor() { companion object }
+/*class ForPar private constructor() { companion object }
 typealias ParOf<A> = Kind<ForPar, A>
 //typealias ParKindedJ<A> = io.kindedj.Hk<ForPar, A>
 @Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
 inline fun <A> ParOf<A>.fix(): Par<A> =
-    this as Par<A>
+    this as Par<A>*/
 
 @higherkind
 class Par<A>(val run: (ExecutorService) -> Future<A>) : ParOf<A> {
@@ -46,15 +47,15 @@ class Par<A>(val run: (ExecutorService) -> Future<A>) : ParOf<A> {
     fun <B> flatMap(f: (A) -> Par<B>): Par<B> = TODO()
 }
 
-class ForOption private constructor() { companion object }
+/*class ForOption private constructor() { companion object }
 typealias OptionOf<A> = Kind<ForOption, A>
 //typealias GenKindedJ<A> = io.kindedj.Hk<ForGen, A>
 @Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
 inline fun <A> OptionOf<A>.fix(): Option<A> =
-    this as Option<A>
+    this as Option<A>*/
 
 @higherkind
-class Option<out A>(val a: A) : OptionOf<A> {
+sealed class Option<out A> : OptionOf<A> {
     companion object {
         fun <A> unit(a: A): Option<A> = TODO()
 
@@ -64,12 +65,18 @@ class Option<out A>(val a: A) : OptionOf<A> {
     fun <B> flatMap(f: (A) -> Option<B>): Option<B> = TODO()
 }
 
-class ForList private constructor() { companion object }
+data class Some<out A>(val get: A) : Option<A>()
+object None : Option<Nothing>()
+
+/*class ForList private constructor() { companion object }
 typealias ListOf<A> = Kind<ForList, A>
 //typealias GenKindedJ<A> = io.kindedj.Hk<ForGen, A>
 @Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
 inline fun <A> ListOf<A>.fix(): List<A> =
-    this as List<A>
+    this as List<A>*/
+
+object Nil : List<Nothing>()
+data class Cons<out A>(val head: A, val tail: List<A>) : List<A>()
 
 @higherkind
 sealed class List<out A> : ListOf<A> {
@@ -77,13 +84,16 @@ sealed class List<out A> : ListOf<A> {
         fun <A> unit(a: A): List<A> = TODO()
 
         fun <A> lazyUnit(a: () -> A): List<A> = TODO()
+        fun <A> empty(): List<A> = Nil as List<A>
+
     }
 
     fun <B> flatMap(f: (A) -> List<B>): List<B> = TODO()
-}
 
-object Nil : List<Nothing>()
-data class Cons<out A>(val head: A, val tail: List<A>) : List<A>()
+    fun <F, A1> foldRight(unit: Any, function: (A, Kind<F, List<A1>>) -> Kind<F, List<A1>>): Kind<F, List<A1>> =
+        TODO()
+
+}
 
 class ForState private constructor() {
     companion object

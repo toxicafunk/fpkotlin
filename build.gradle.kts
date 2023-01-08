@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.7.10"
+    kotlin("jvm") version "1.3.21"
     //id("org.jlleitschuh.gradle.ktlint") version "9.2.1"
     kotlin("kapt") version "1.3.21"
     application

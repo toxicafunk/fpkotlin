@@ -2,7 +2,6 @@ package net.hybride.rng
 
 import net.hybride.Cons
 import net.hybride.List
-import net.hybride.List.Companion.foldRight
 import net.hybride.Nil
 
 interface RNG {
@@ -105,7 +104,7 @@ fun <A> sequence(fs: List<Rand<A>>): Rand<List<A>> = { rng ->
 }
 
 fun <A> sequenceF(fs: List<Rand<A>>): Rand<List<A>> =
-    foldRight(fs, unit(List.empty())) { f, acc ->
+    fs.foldRight(unit(List.empty())) { f, acc ->
         map2(f, acc) { h, t -> Cons(h, t) }
     }
 
