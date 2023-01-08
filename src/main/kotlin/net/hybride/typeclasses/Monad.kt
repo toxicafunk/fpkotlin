@@ -32,14 +32,16 @@ interface Monad<F>: Functor<F> {
         lfa.foldRight(
             unit(List.empty<A>())
         ) { fa: Kind<F, A>, fla: Kind<F, List<A>> ->
-            map2(fa, fla) { a, la -> Cons<A>(a, la) as List<A> }
+            map2(fa, fla) { a, la -> Cons<A>(a, la) }
         }
 
     fun <A, B> traverse(
         la: List<A>,
         f: (A) -> Kind<F, B>
     ): Kind<F, List<B>> =
-        TODO()
+        la.foldRight(unit(List.empty<B>())) { a: A, acc: Kind<F, List<B>> ->
+            map2(f(a), acc) { b: B, lb: List<B> -> Cons(b, lb) }
+        }
 }
 
 object Monads {
