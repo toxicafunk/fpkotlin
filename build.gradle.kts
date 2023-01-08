@@ -12,20 +12,31 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    jcenter()
+    maven("https://dl.bintray.com/kotlin/kotlinx")
 }
 
 val arrowVersion = "0.10.2"
 dependencies {
     implementation("io.arrow-kt:arrow-core:$arrowVersion")
-    /*compile("io.arrow-kt:arrow-fx:$arrowVersion")
-    compile("io.arrow-kt:arrow-mtl:$arrowVersion")
-    compile("io.arrow-kt:arrow-syntax:$arrowVersion")*/
+    /*implementation("io.arrow-kt:arrow-fx:$arrowVersion")
+    implementation("io.arrow-kt:arrow-mtl:$arrowVersion")
+    implementation("io.arrow-kt:arrow-syntax:$arrowVersion")*/
     implementation("io.kotlintest:kotlintest-runner-junit5:3.3.2")
     testImplementation(kotlin("test"))
+    kapt("io.arrow-kt:arrow-meta:$arrowVersion")
+}
+
+kapt {
+    useBuildCache = false
 }
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.withType<KotlinCompile>().configureEach {
+    kotlinOptions.suppressWarnings = true
 }
 
 tasks.withType<KotlinCompile> {

@@ -1,5 +1,6 @@
 package net.hybride
 
+import net.hybride.typeclasses.Par
 import kotlin.math.pow
 
 fun <A, B> Option<A>.map(f: (A) -> B): Option<B> =
@@ -8,8 +9,8 @@ fun <A, B> Option<A>.map(f: (A) -> B): Option<B> =
         is Some -> Some(f(this.get))
     }
 
-fun <A, B> Option<A>.flatMap(f: (A) -> Option<B>): Option<B> =
-    this.map(f).getOrElse { None }
+//fun <A, B> Option<A>.flatMap(f: (A) -> Option<B>): Option<B> =
+//    this.map(f).getOrElse { None }
 
 fun <A> Option<A>.getOrElse(default: () -> A): A =
     when (this) {
@@ -28,7 +29,7 @@ fun <A> Option<A>.orElse(ob: () -> Option<A>): Option<A> =
         .getOrElse { ob() }
 
 fun <A> Option<A>.filter(f: (A) -> Boolean): Option<A> =
-    this.flatMap { a -> if (f(a)) Some(a) else None }
+    this.flatMap { a: A -> if (f(a)) Some(a) else None }
 
 /*
 TC       |    Unit      |     Generic      |       Effect
@@ -54,21 +55,23 @@ Functor<F<A>>.map(i -> trap { remote { someF(i) }})
 
 sealed class Option<out A> {
     companion object {
+        fun <A> unit(a: A): Option<A> = TODO()
+
         fun <A> empty(): Option<A> = None
 
         fun <A, B> lift(f: (A) -> B): (Option<A>) -> Option<B> = { oa -> oa.map(f) }
 
         fun <A, B, C> map2(oa: Option<A>, ob: Option<B>, f: (A, B) -> C): Option<C> =
-            oa.flatMap { a ->
-                ob.map { b ->
+            oa.flatMap { a: A ->
+                ob.map { b: B ->
                     f(a, b)
                 }
             }
 
         fun <A, B, C> map2P(oa: Option<A>, ob: Option<B>, f: (A, B) -> C): Option<C> =
             when {
-                oa is Some && ob is Some -> oa.flatMap { a ->
-                    ob.map { b -> f(a, b) }
+                oa is Some && ob is Some -> oa.flatMap { a: A ->
+                    ob.map { b: B -> f(a, b) }
                 }
                 else -> None
             }
@@ -101,8 +104,8 @@ sealed class Option<out A> {
 
         fun <A> sequenceF(xs: List<Option<A>>): Option<List<A>> {
             val zero = Some(Nil as List<A>) as Option<List<A>>
-            val optList = List.foldLeft(xs, zero) { acc, a ->
-                acc.flatMap { l ->
+            val optList = List.foldLeft(xs, zero) { acc, a: Option<A> ->
+                acc.flatMap { l: List<A> ->
                     when (a) {
                         is None -> None
                         is Some -> Some(Cons(a.get, l))
@@ -128,7 +131,7 @@ sealed class Option<out A> {
                     is Nil -> acc.map { List.reverse(it) }
                     is Cons -> loop(
                         xa1.tail,
-                        acc.flatMap { l ->
+                        acc.flatMap { l: List<B> ->
                             f(xa1.head).map { b -> Cons(b, l) }
                         }
                     )
@@ -152,6 +155,9 @@ sealed class Option<out A> {
         fun <A> sequence(xs: List<Option<A>>): Option<List<A>> =
             traverse(xs) { it }
     }
+
+    fun <B> flatMap(f: (A) -> Option<B>): Option<B> =
+        this.map(f).getOrElse { None }
 }
 data class Some<out A>(val get: A) : Option<A>()
 object None : Option<Nothing>()
