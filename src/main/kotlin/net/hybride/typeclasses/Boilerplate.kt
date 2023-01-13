@@ -84,8 +84,10 @@ sealed class List<out A> : ListOf<A> {
         fun <A> unit(a: A): List<A> = TODO()
 
         fun <A> lazyUnit(a: () -> A): List<A> = TODO()
+
         fun <A> empty(): List<A> = Nil as List<A>
 
+        fun <A> fill(n: Int, a: A): List<A> = TODO()
     }
 
     fun <B> flatMap(f: (A) -> List<B>): List<B> = TODO()

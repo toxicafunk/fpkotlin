@@ -42,6 +42,43 @@ interface Monad<F>: Functor<F> {
         la.foldRight(unit(List.empty<B>())) { a: A, acc: Kind<F, List<B>> ->
             map2(f(a), acc) { b: B, lb: List<B> -> Cons(b, lb) }
         }
+
+    fun <A> replicateM(n: Int, ma: Kind<F, A>): Kind<F, List<A>> =
+        when (n) {
+            0 -> unit(List.empty())
+            else ->
+                map2(ma, replicateM(n-1, ma)) { m: A, ml: List<A> -> Cons(m, ml) }
+        }
+
+    fun <A> _replicateM(n: Int, ma: Kind<F, A>): Kind<F, List<A>> =
+        sequence(List.fill(n, ma))
+
+    fun <A, B> product(
+        ma: Kind<F, A>,
+        mb: Kind<F, B>
+    ): Kind<F, Pair<A, B>> =
+        map2(ma, mb) { a, b -> a to b }
+
+    fun <A> filterM(
+        ms: List<A>,
+        f: (A) -> Kind<F, Boolean>
+    ): Kind<F, List<A>> =
+        when (ms) {
+            is Nil -> unit(Nil)
+            is Cons ->
+                flatMap(f(ms.head)) { succeed ->
+                    if (succeed) map(filterM(ms.tail, f)) { tail ->
+                        Cons(ms.head, tail)
+                    } else (filterM(ms.tail, f))
+                }
+        }
+
+    fun <A, B, C> compose(
+        f: (A) -> Kind<F, B>,
+        g: (B) -> Kind<F, C>
+    ): (A) -> Kind<F, C> = { a: A ->
+        flatMap(f(a)) { b -> g(b) }
+    }
 }
 
 object Monads {
