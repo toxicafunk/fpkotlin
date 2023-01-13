@@ -8,7 +8,6 @@ import arrow.core.fix
 import arrow.core.ListK
 import arrow.core.SequenceK
 import arrow.core.SequenceKOf
-import net.hybride.typeclasses.Option
 
 interface Monad<F>: Functor<F> {
     fun <A> unit(a: A): Kind<F, A>
@@ -132,6 +131,39 @@ object Monads {
             fa: StateOf<S,  A>,
             f: (A) -> StateOf<S, B>
         ): StateOf<S, B> =
+            fa.fix().flatMap { a -> f(a).fix() }
+    }
+
+    val intStateMonad: StateMonad<Int> = object : StateMonad<Int> {
+        override fun <A> unit(a: A): StateOf<Int, A> =
+            State { s -> a to s }
+        override fun <A, B> flatMap(
+            fa: StateOf<Int, A>,
+            f: (A) -> StateOf<Int, B>
+        ): StateOf<Int, B> =
+            fa.fix().flatMap { a -> f(a).fix() }
+    }
+
+    interface EitherMonad<E> : Monad<EitherPartialOf<E>> {
+        override fun <A> unit(a: A): EitherOf<E, A> =
+            Either.unit(a)
+
+        override fun <A, B> flatMap(
+            fa: EitherOf<E,  A>,
+            f: (A) -> EitherOf<E, B>
+        ): EitherOf<E, B> =
+            fa.fix().flatMap { a -> f(a).fix() }
+
+    }
+
+    val eitherMonad: EitherMonad<String> = object : EitherMonad<String> {
+        override fun <A> unit(a: A): EitherOf<String, A> =
+            Either.unit(a)
+
+        override fun <A, B> flatMap(
+            fa: EitherOf<String, A>,
+            f: (A) -> EitherOf<String, B>
+        ): EitherOf<String,B> =
             fa.fix().flatMap { a -> f(a).fix() }
     }
 }
