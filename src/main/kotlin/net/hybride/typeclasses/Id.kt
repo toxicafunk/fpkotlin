@@ -1,6 +1,5 @@
 package net.hybride.typeclasses
 
-import arrow.Kind
 import arrow.higherkind
 
 @higherkind

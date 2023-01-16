@@ -4,6 +4,7 @@ import arrow.Kind
 import arrow.Kind2
 import arrow.higherkind
 import chapter8.RNG
+import net.hybride.Cons
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 
@@ -95,6 +96,11 @@ data class Cons<out A>(val head: A, val tail: List<A>) : List<A>()
 @higherkind
 sealed class List<out A> : ListOf<A> {
     companion object {
+        fun <A> of(vararg aa: A): List<A> {
+            val tail = aa.sliceArray(1 until aa.size)
+            return if (aa.isEmpty()) Nil else Cons(aa.first(), of(*tail))
+        }
+
         fun <A> unit(a: A): List<A> = TODO()
 
         fun <A> lazyUnit(a: () -> A): List<A> = TODO()
@@ -103,6 +109,12 @@ sealed class List<out A> : ListOf<A> {
 
         fun <A> fill(n: Int, a: A): List<A> = TODO()
     }
+
+    fun <B> map(f: (A) -> B): List<B> =
+        when (this) {
+            is Nil -> xs
+            is Cons -> Cons(f(this.head), map(this.tail, f))
+        }
 
     fun <B> flatMap(f: (A) -> List<B>): List<B> = TODO()
 
