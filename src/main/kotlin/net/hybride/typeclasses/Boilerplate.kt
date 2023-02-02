@@ -7,6 +7,9 @@ import chapter8.RNG
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 
+//interface Kind<out F, out A>
+//typealias Kind2<F, A, B> = arrow.Kind<arrow.Kind<F, A>, B>
+
 /*class ForGen private constructor() { companion object }
 typealias GenOf<A> = Kind<ForGen, A>
 //typealias GenKindedJ<A> = io.kindedj.Hk<ForGen, A>
@@ -53,15 +56,27 @@ typealias OptionOf<A> = Kind<ForOption, A>
 inline fun <A> OptionOf<A>.fix(): Option<A> =
     this as Option<A>*/
 
+fun <A, B> Option<A>.map(f: (A) -> B): Option<B> =
+    when (this) {
+        is None -> None
+        is Some -> Some(f(this.get))
+    }
+
+fun <A> Option<A>.getOrElse(default: () -> A): A =
+    when (this) {
+        is None -> default()
+        is Some -> this.get
+    }
+
 @higherkind
 sealed class Option<out A> : OptionOf<A> {
     companion object {
-        fun <A> unit(a: A): Option<A> = TODO()
-
-        fun <A> lazyUnit(a: () -> A): Option<A> = TODO()
+        fun <A> unit(a: A): Option<A> = Some(a)
     }
 
-    fun <B> flatMap(f: (A) -> Option<B>): Option<B> = TODO()
+    fun <B> flatMap(f: (A) -> Option<B>): Option<B> =
+        this.map(f).getOrElse { None }
+
 }
 
 data class Some<out A>(val get: A) : Option<A>()
@@ -80,6 +95,11 @@ data class Cons<out A>(val head: A, val tail: List<A>) : List<A>()
 @higherkind
 sealed class List<out A> : ListOf<A> {
     companion object {
+        fun <A> of(vararg aa: A): List<A> {
+            val tail = aa.sliceArray(1 until aa.size)
+            return if (aa.isEmpty()) Nil else Cons(aa.first(), of(*tail))
+        }
+
         fun <A> unit(a: A): List<A> = TODO()
 
         fun <A> lazyUnit(a: () -> A): List<A> = TODO()
@@ -95,6 +115,12 @@ sealed class List<out A> : ListOf<A> {
             }
     }
 
+    fun <B> map(f: (A) -> B): List<B> =
+        when (this) {
+            is Nil -> this
+            is Cons -> Cons(f(this.head), this.tail.map(f))
+        }
+
     fun <B> flatMap(f: (A) -> List<B>): List<B> = TODO()
 
     fun <F, A1> foldRight(unit: Any, function: (A, Kind<F, List<A1>>) -> Kind<F, List<A1>>): Kind<F, List<A1>> =
@@ -102,12 +128,9 @@ sealed class List<out A> : ListOf<A> {
 
 }
 
-class ForState private constructor() {
-    companion object
-}
+class ForState private constructor() { companion object }
 typealias StateOf<S, A> = Kind2<ForState, S, A>
 typealias StatePartialOf<S> = Kind<ForState, S>
-
 inline fun <S, A> StateOf<S, A>.fix(): State<S, A> =
     this as State<S, A>
 
@@ -133,3 +156,23 @@ data class State<S, out A>(val run: (S) -> Pair<A, S>) : StateOf<S, A> {
             f(a).run(s2)
         }
 }
+
+class ForEither private constructor() { companion object }
+typealias EitherOf<E, A> = Kind2<ForEither, E, A>
+typealias EitherPartialOf<E> = Kind<ForEither, E>
+inline fun <E, A> EitherOf<E, A>.fix(): Either<E, A> =
+    this as Either<E, A>
+
+sealed class Either<out E, out A> : EitherOf<E, A> {
+    companion object {
+        fun <E, A> unit(a: A): Either<E, A> = Right(a)
+    }
+
+    fun <B> flatMap(f: (A) -> Either<@UnsafeVariance E, B>): Either<E, B> =
+        when (this) {
+            is Left -> this
+            is Right -> f(this.value)
+        }
+}
+data class Left<out E>(val value: E) : Either<E, Nothing>()
+data class Right<out A>(val value: A) : Either<Nothing, A>()

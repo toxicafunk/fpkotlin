@@ -43,7 +43,7 @@ fun <E> validation(): Applicative2<ValidationPartialOf<E>> = object : Applicativ
             }
             is Failure -> when (vb) {
                 is Success -> va
-                is Failure -> Failure(va.head, Cons(vb.head, List.append(va.tail, vb.tail))
+                is Failure -> Failure(va.head, Cons(vb.head, List.append(va.tail, vb.tail)))
             }
         }
     }
