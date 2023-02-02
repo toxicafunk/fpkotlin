@@ -4,7 +4,6 @@ import arrow.Kind
 import arrow.Kind2
 import arrow.higherkind
 import chapter8.RNG
-import net.hybride.Nil
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 
@@ -88,6 +87,12 @@ sealed class List<out A> : ListOf<A> {
         fun <A> empty(): List<A> = Nil as List<A>
 
         fun <A> fill(n: Int, a: A): List<A> = TODO()
+
+        fun <A> append(a1: List<A>, a2: List<A>): List<A> =
+            when (a1) {
+                is Nil -> a2
+                is Cons -> Cons(a1.head, append(a1.tail, a2))
+            }
     }
 
     fun <B> flatMap(f: (A) -> List<B>): List<B> = TODO()
