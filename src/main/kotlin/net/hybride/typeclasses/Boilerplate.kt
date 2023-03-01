@@ -123,8 +123,12 @@ sealed class List<out A> : ListOf<A> {
 
     fun <B> flatMap(f: (A) -> List<B>): List<B> = TODO()
 
-    fun <F, A1> foldRight(unit: Any, function: (A, Kind<F, List<A1>>) -> Kind<F, List<A1>>): Kind<F, List<A1>> =
-        TODO()
+    //fun <F, A1> foldRight(unit: Any, function: (A, Kind<F, List<A1>>) -> Kind<F, List<A1>>): Kind<F, List<A1>> =
+    fun <B> foldRight(z: B, f: (A, B) -> B): B =
+        when (this) {
+            is Nil -> z
+            is Cons -> f(this.head, this.tail.foldRight(z, f))
+        }
 
 }
 
@@ -173,6 +177,9 @@ sealed class Either<out E, out A> : EitherOf<E, A> {
             is Left -> this
             is Right -> f(this.value)
         }
+
+    fun <B> map(f: (A) -> B): Either<E, B> =
+        flatMap { a -> unit<E,B>(f(a)) }
 }
 data class Left<out E>(val value: E) : Either<E, Nothing>()
 data class Right<out A>(val value: A) : Either<Nothing, A>()
