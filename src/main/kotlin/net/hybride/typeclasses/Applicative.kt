@@ -1,6 +1,8 @@
 package net.hybride.typeclasses
 
 import arrow.Kind
+import arrow.core.extensions.set.foldable.foldLeft
+import arrow.core.foldRight
 
 interface Applicative<F> : Functor<F> {
 
@@ -30,6 +32,11 @@ interface Applicative<F> : Functor<F> {
 
     fun <A> sequence(lfa: List<Kind<F, A>>): Kind<F, List<A>> =
         traverse(lfa) { it }
+
+    fun <K, V> sequence(mkv: Map<K, Kind<F, V>>): Kind<F, Map<K, V>> =
+        mkv.entries.foldLeft(unit(emptyMap())) { facc: Kind<F, Map<K, V>>, (k: K, fv: Kind<F, V>) ->
+            map2(facc, fv) { acc, v -> acc + (k to v)}
+        }
 
     fun <A> replicateM(n: Int, ma: Kind<F, A>): Kind<F, List<A>> =
         sequence(List.fill(n, ma))
