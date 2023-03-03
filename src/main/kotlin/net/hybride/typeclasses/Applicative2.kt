@@ -3,6 +3,15 @@ package net.hybride.typeclasses
 import arrow.Kind
 import arrow.syntax.function.curried
 
+/*
+           apply
+    F<A>   -f->    F<B>
+     ^              ^
+     |     map      |
+     A     -f->     B
+
+ */
+
 interface Applicative2<F> : Functor<F> {
     fun <A, B> apply(
         fab: Kind<F, (A) -> B>,
@@ -18,6 +27,9 @@ interface Applicative2<F> : Functor<F> {
     ): Kind<F, B> =
         apply(unit(f), fa)
 
+    /*
+    (A, B) -> C ==> (A) -> (B) -> C
+     */
     fun <A, B, C> map2(
         fa: Kind<F, A>,
         fb: Kind<F, B>,

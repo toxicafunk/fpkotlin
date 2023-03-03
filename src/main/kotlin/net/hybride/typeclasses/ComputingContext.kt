@@ -1,6 +1,7 @@
 package net.hybride.typeclasses
 
 import kotlin.random.Random
+import arrow.Kind
 
 interface EitherMonad<E> : Monad<EitherPartialOf<E>> {
     override fun <A> unit(a: A): EitherOf<E, A> =
@@ -69,19 +70,22 @@ fun main() {
 
     val listEither1: List<Either<MyError<Int>, Int>> = listInt.map { i -> SomeService.callMayFail(i) }
     println(listEither1)
+
     val res = eitherMonadMyError.sequence(listEither1)
     println(res)
 
-    val listEither2 = eitherMonadMyError.traverse(listInt) { i -> SomeService.callMayFail(i) }
+    val listEither2: Kind<Kind<ForEither, MyError<Int>>, List<Int>> = eitherMonadMyError.traverse(listInt) { i -> SomeService.callMayFail(i) }
     println(listEither2)
 
-    /*eitherMonadMyError.bimap( { e ->
-        when (e) {
-            is ValidationError -> e.message
-            else -> "This shouldn't happen"
-        }
-    },
-        { a -> }
+    /*eitherMonadMyError.bimap(
+        listEither1,
+        { e ->
+            when (e) {
+                is ValidationError -> e.message
+                else -> "This shouldn't happen"
+            }
+        },
+        { a -> a }
     )*/
 
 }
