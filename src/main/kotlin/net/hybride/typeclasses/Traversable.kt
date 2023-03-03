@@ -4,6 +4,7 @@ import arrow.Kind
 import arrow.higherkind
 
 interface Traversable<F> : Functor<F> {
+    // foreach
     fun <G, A, B> traverse(
         fa: Kind<F, A>,
         AG: Applicative<G>,
@@ -11,6 +12,7 @@ interface Traversable<F> : Functor<F> {
     ): Kind<G, Kind<F, B>> =
         sequence(map(fa, f), AG)
 
+    // collect
     fun <G, A> sequence(
         fga: Kind<F, Kind<G, A>>,
         AG: Applicative<G>
@@ -28,7 +30,6 @@ fun <A> optionTraversable(): Traversable<ForOption> = object : Traversable<ForOp
 fun <A> listTraversable(): Traversable<ForList> = object : Traversable<ForList> {
     override fun <A, B> map(fa: Kind<ForList, A>, f: (A) -> B): Kind<ForList, B> =
         fa.fix().map(f)
-
 }
 
 fun <A> treeTraversable(): Traversable<ForTree> = object : Traversable<ForTree> {
